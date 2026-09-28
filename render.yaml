@@ -1,0 +1,39 @@
+# Publicação no Render (render.com) via Blueprint.
+# O banco PostgreSQL fica fora do Render (sugestão: Neon, plano gratuito sem prazo de expiração).
+# Depois de criar o Blueprint, preencha no painel do Render as variáveis marcadas com "sync: false".
+services:
+  - type: web
+    name: farmacom-api
+    runtime: node
+    rootDir: server
+    plan: free
+    # Atenção: db:seed recria as tabelas e os dados de demonstração a cada publicação.
+    # Quando o sistema for usado de verdade, troque por "npm ci".
+    buildCommand: npm ci && npm run db:seed
+    startCommand: npm start
+    healthCheckPath: /api/saude
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_TIMEZONE
+        value: America/Sao_Paulo
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: web
+    name: farmacom-web
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
