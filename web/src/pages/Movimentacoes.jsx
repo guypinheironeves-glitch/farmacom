@@ -1,0 +1,74 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { api, mensagemDeErro } from "../api.js";
+import { dataBR, dataHoraBR, numero, TIPOS_MOV } from "../format.js";
+import { Aviso, Vazio } from "../components/ui.jsx";
+import FormMovimentacao from "../components/FormMovimentacao.jsx";
+
+export default function Movimentacoes() {
+  const [lista, setLista] = useState(null);
+  const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [chaveForm, setChaveForm] = useState(0);
+
+  const carregar = useCallback(() => {
+    api("/movimentacoes?limite=100").then(setLista).catch((e) => setErro(mensagemDeErro(e)));
+  }, []);
+
+  useEffect(carregar, [carregar]);
+
+  return (
+    <>
+      <div className="cabecalho">
+        <div>
+          <h1>Movimentações</h1>
+          <p className="subtitulo">Entradas, vendas e baixas de estoque por lote.</p>
+        </div>
+      </div>
+
+      <section className="painel-bloco">
+        <div className="bloco-topo"><h2>Registrar movimentação</h2></div>
+        <Aviso tipo="sucesso">{aviso}</Aviso>
+        <FormMovimentacao
+          key={chaveForm}
+          aoSalvar={(m) => {
+            setAviso(`Movimentação registrada. Saldo do lote: ${m.saldo_lote}.`);
+            setChaveForm((k) => k + 1);
+            carregar();
+          }}
+        />
+      </section>
+
+      <section className="painel-bloco">
+        <div className="bloco-topo"><h2>Últimas movimentações</h2></div>
+        <Aviso>{erro}</Aviso>
+        {lista && lista.length === 0 && <Vazio>Nenhuma movimentação registrada.</Vazio>}
+        {lista && lista.length > 0 && (
+          <div className="tabela-rolagem">
+            <table>
+              <thead>
+                <tr><th>Data</th><th>Medicamento</th><th>Lote</th><th>Tipo</th><th className="num">Qtd.</th><th>Observação</th><th>Usuário</th></tr>
+              </thead>
+              <tbody>
+                {lista.map((m) => {
+                  const t = TIPOS_MOV[m.tipo];
+                  return (
+                    <tr key={m.id}>
+                      <td className="sem-quebra">{dataHoraBR(m.criado_em)}</td>
+                      <td><Link to={`/medicamentos/${m.medicamento_id}`}>{m.medicamento}</Link></td>
+                      <td>{m.lote}<div className="texto-fraco">val. {dataBR(m.validade)}</div></td>
+                      <td><span className={`tipo tipo-${t.classe}`}>{t.rotulo}</span></td>
+                      <td className={`num tipo-num-${t.classe}`}>{t.sinal}{numero(m.quantidade)}</td>
+                      <td>{m.observacao || "-"}</td>
+                      <td>{m.usuario || "-"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
