@@ -10,10 +10,11 @@ export default function Movimentacoes() {
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [chaveForm, setChaveForm] = useState(0);
+  const [tipo, setTipo] = useState("");
 
   const carregar = useCallback(() => {
-    api("/movimentacoes?limite=100").then(setLista).catch((e) => setErro(mensagemDeErro(e)));
-  }, []);
+    api(`/movimentacoes?limite=100${tipo ? `&tipo=${tipo}` : ""}`).then(setLista).catch((e) => setErro(mensagemDeErro(e)));
+  }, [tipo]);
 
   useEffect(carregar, [carregar]);
 
@@ -40,10 +41,16 @@ export default function Movimentacoes() {
       </section>
 
       <section className="bloco">
-        <div className="bloco-topo"><h2>Últimas movimentações</h2></div>
+        <div className="bloco-topo">
+          <h2>Últimas movimentações</h2>
+          <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Filtrar por tipo" className="select-compacto">
+            <option value="">Todos os tipos</option>
+            {Object.entries(TIPOS_MOV).map(([v, t]) => <option key={v} value={v}>{t.rotulo}</option>)}
+          </select>
+        </div>
         <Aviso>{erro}</Aviso>
         {!lista && !erro && <Carregando />}
-        {lista && lista.length === 0 && <Vazio>Nenhuma movimentação registrada.</Vazio>}
+        {lista && lista.length === 0 && <Vazio>{tipo ? "Nenhuma movimentação desse tipo." : "Nenhuma movimentação registrada."}</Vazio>}
         {lista && lista.length > 0 && (
           <div className="tabela-rolagem">
             <table>

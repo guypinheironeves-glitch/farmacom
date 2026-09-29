@@ -1,5 +1,3 @@
-// Dados de exemplo de uma farmácia fictícia, com datas relativas a hoje
-// para que sempre existam lotes vencidos, a vencer e medicamentos com estoque baixo.
 import { fileURLToPath } from "node:url";
 import { hojeISO, pool } from "../src/db.js";
 import { hashSenha } from "../src/auth.js";
@@ -8,7 +6,6 @@ import { CATALOGO_DEMO, FORNECEDORES, PACIENTES, PRESCRITORES } from "./catalogo
 
 export const USUARIO_DEMO = { nome: "Proprietário Demo", email: "demo@farmacom.app", senha: "farmacom123" };
 
-// Gerador pseudoaleatório com semente fixa: os dados saem iguais a cada execução
 function gerador(semente) {
   let s = semente >>> 0;
   return () => {
@@ -17,7 +14,6 @@ function gerador(semente) {
   };
 }
 
-// EAN-13 de uso interno (prefixo 200) com dígito verificador
 function ean(sequencia) {
   const base = `200${String(sequencia).padStart(9, "0")}`;
   const soma = base.split("").reduce((acc, d, i) => acc + Number(d) * (i % 2 ? 3 : 1), 0);
@@ -29,25 +25,21 @@ function siglaLote(nome, n) {
   return `${letras}${String(26 + n).padStart(2, "0")}${String(100 + n * 37).slice(-3)}`;
 }
 
-// Monta os lotes e as movimentações de um medicamento conforme o cenário de demonstração
 function planejar(item, indice) {
   const [nome, , , , , , , controle, , , custo, minimo, demanda, cenario = ""] = item;
   const rnd = gerador(indice * 97 + 13);
-  // Giro concentrado nos itens mais procurados, como no varejo real (poucos itens respondem pela maior parte das vendas)
   const vendasMes = Math.max(3, Math.round(demanda ** 1.7 / 12));
   const tem = (c) => (cenario || "").split(" ").includes(c);
   const lotes = [];
   const fornecedor = () => FORNECEDORES[Math.floor(rnd() * FORNECEDORES.length)];
   const custoLote = (fator = 1) => Number((custo * fator).toFixed(2));
 
-  // Lote antigo: vencido ainda com saldo, ou vencido e descartado dentro do período
   if (tem("vencido")) {
     lotes.push({ validade: -(2 + Math.floor(rnd() * 8)), entrada: Math.ceil(vendasMes * 0.6) + 4, diasAtras: 60, custo: custoLote(0.97), sobra: true });
   }
   if (tem("baixado")) {
     lotes.push({ validade: -(4 + Math.floor(rnd() * 14)), entrada: Math.ceil(vendasMes * 0.5) + 6, diasAtras: 70, custo: custoLote(0.97), baixa: true });
   }
-  // Lote vigente
   let validade = 120 + Math.floor(rnd() * 420);
   if (tem("vence30")) validade = 6 + Math.floor(rnd() * 22);
   if (tem("vence90")) validade = 40 + Math.floor(rnd() * 45);
@@ -55,7 +47,6 @@ function planejar(item, indice) {
     ? Math.ceil(vendasMes * 0.9) + minimo
     : Math.max(Math.ceil(vendasMes * (1.4 + rnd())), minimo + vendasMes + 4);
   lotes.push({ validade, entrada: entradaPrincipal, diasAtras: 35, custo: custoLote() });
-  // Reposição recente para os medicamentos de maior giro
   if (!tem("baixo") && vendasMes >= 25) {
     lotes.push({ validade: validade + 150 + Math.floor(rnd() * 200), entrada: Math.ceil(vendasMes * (0.6 + rnd() * 0.6)), diasAtras: 8 + Math.floor(rnd() * 8), custo: custoLote(1.03) });
   }
@@ -65,7 +56,6 @@ function planejar(item, indice) {
     l.saldo = 0;
   });
 
-  // Vendas dos últimos 28 dias, sempre do lote válido que vence primeiro (FEFO)
   const movimentos = lotes.map((l, i) => ({ lote: i, tipo: "entrada", quantidade: l.entrada, diasAtras: l.diasAtras, obs: "Compra do fornecedor" }));
   lotes.forEach((l) => (l.saldo = l.entrada));
   let restante = Math.round(vendasMes * (0.85 + rnd() * 0.3));
@@ -98,7 +88,6 @@ function planejar(item, indice) {
     }
     movimentos.push(mov);
   }
-  // Descarte do lote vencido, no dia seguinte ao vencimento
   lotes.forEach((l, i) => {
     if (l.baixa && l.saldo > 0) {
       movimentos.push({ lote: i, tipo: "baixa_vencimento", quantidade: l.saldo, diasAtras: Math.max(0, -l.validade - 1), obs: "Descarte de medicamento vencido" });

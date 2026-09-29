@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { situacaoValidade } from "../format.js";
 import { ROTULO_TARJA_CURTO, ROTULO_TIPO, rotuloControle } from "../catalogo.js";
 
-// Ícones simples em SVG (sem dependências externas)
 const CAMINHOS = {
   painel: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
   pilula: "M4.22 11.29l7.07-7.07a5 5 0 017.07 7.07l-7.07 7.07a5 5 0 01-7.07-7.07zm1.41 1.42a3 3 0 004.24 4.24l3.54-3.54-4.24-4.24-3.54 3.54z",
@@ -41,12 +40,10 @@ export function Selo({ classe = "neutro", children, titulo }) {
   return <span className={`selo selo-${classe}`} title={titulo}>{children}</span>;
 }
 
-// Faixa vertical com a cor da tarja, no início da linha do medicamento
 export function FaixaTarja({ tarja }) {
   return <span className={`faixa-tarja faixa-${tarja}`} title={ROTULO_TARJA_CURTO[tarja]} aria-label={`Tarja: ${ROTULO_TARJA_CURTO[tarja]}`} />;
 }
 
-// Selos regulatórios: tipo (genérico com o "G" da tarja amarela), controle especial e armazenamento
 export function SelosRegulatorios({ med, compacto = false }) {
   return (
     <span className="selos">
@@ -115,23 +112,5 @@ export function Carregando({ linhas = 4 }) {
     <div className="carregando" aria-busy="true" aria-label="Carregando">
       {Array.from({ length: linhas }, (_, i) => <div key={i} className="carregando-linha" />)}
     </div>
-  );
-}
-
-export function Indicador({ icone, rotulo, valor, detalhe, tom = "padrao", destino }) {
-  const conteudo = (
-    <>
-      <div className="indicador-icone"><Icone nome={icone} /></div>
-      <div className="indicador-corpo">
-        <div className="indicador-valor">{valor}</div>
-        <div className="indicador-rotulo">{rotulo}</div>
-        {detalhe && <div className="indicador-detalhe">{detalhe}</div>}
-      </div>
-    </>
-  );
-  return destino ? (
-    <a className={`indicador tom-${tom}`} href={destino}>{conteudo}</a>
-  ) : (
-    <div className={`indicador tom-${tom}`}>{conteudo}</div>
   );
 }

@@ -103,8 +103,8 @@ test("alerta inclui lotes dentro do prazo e exclui os de fora", async () => {
   const criar = (codigo, dias) =>
     request(app).post(`/api/medicamentos/${med.body.id}/lotes`).set(auth())
       .send({ codigo, validade: hojeISO(dias), quantidade_inicial: 3 });
-  await criar("A30", 30);   // no limite do prazo: entra
-  await criar("A31", 31);   // um dia depois do prazo: não entra
+  await criar("A30", 30);
+  await criar("A31", 31);
 
   const res = await request(app).get("/api/alertas?dias=30").set(auth());
   const lotes = res.body.validade.map((l) => l.lote);
@@ -118,4 +118,23 @@ test("medicamento abaixo do estoque mínimo aparece no alerta", async () => {
     .send({ codigo: "M1", validade: hojeISO(200), quantidade_inicial: 9 });
   const res = await request(app).get("/api/alertas").set(auth());
   assert.ok(res.body.estoque_baixo.some((m) => m.medicamento_id === med.body.id));
+});
+
+test("edição de lote altera validade e custo sem mexer no saldo", async () => {
+  const med = await request(app).post("/api/medicamentos").set(auth()).send({ nome: "Teste edição" });
+  const lote = await request(app).post(`/api/medicamentos/${med.body.id}/lotes`).set(auth())
+    .send({ codigo: "E1", validade: hojeISO(50), quantidade_inicial: 7 });
+  const res = await request(app).put(`/api/lotes/${lote.body.id}`).set(auth())
+    .send({ codigo: "E1", validade: hojeISO(80), preco_custo: 3.5 });
+  assert.equal(res.status, 200);
+  const detalhe = await request(app).get(`/api/medicamentos/${med.body.id}`).set(auth());
+  assert.equal(detalhe.body.lotes[0].dias_para_vencer, 80);
+  assert.equal(detalhe.body.lotes[0].preco_custo, 3.5);
+  assert.equal(detalhe.body.saldo_total, 7);
+});
+
+test("filtro de movimentações por tipo", async () => {
+  const res = await request(app).get("/api/movimentacoes?tipo=entrada").set(auth());
+  assert.ok(res.body.length > 0);
+  assert.ok(res.body.every((m) => m.tipo === "entrada"));
 });

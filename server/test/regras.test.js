@@ -119,7 +119,6 @@ test("curva ABC classifica todos os itens vendidos e soma 100%", async () => {
   assert.equal(itens.at(-1).acumulado, 100);
   const somaResumo = resumo.reduce((a, r) => a + r.faturamento, 0);
   assert.ok(Math.abs(somaResumo - total) < 0.05);
-  // a ordem das classes nunca volta: A antes de B antes de C
   const ordem = itens.map((i) => i.classe).join("");
   assert.match(ordem, /^A+B*C*$/);
 });

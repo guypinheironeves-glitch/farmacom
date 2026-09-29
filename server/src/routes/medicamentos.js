@@ -8,7 +8,6 @@ export const medicamentosRouter = Router();
 
 const texto = (max) => z.string().trim().max(max).optional().nullable().transform((v) => (v ? v : null));
 
-// Dígito verificador do código de barras EAN-13
 export function eanValido(codigo) {
   if (!/^\d{13}$/.test(codigo)) return false;
   const soma = codigo
@@ -39,7 +38,6 @@ const medicamentoSchema = z
     preco_venda: z.coerce.number().min(0, "Não pode ser negativo.").optional().nullable(),
     estoque_minimo: z.coerce.number().int("Use um número inteiro.").min(0, "Não pode ser negativo.").default(0),
   })
-  // Coerência entre tarja e controle especial
   .refine((d) => !(d.controle_especial && d.tarja === "sem_tarja"), {
     message: "Medicamento com controle especial não pode ser isento de prescrição.",
     path: ["tarja"],
@@ -63,7 +61,6 @@ const CAMPOS = [
 ];
 const valores = (d) => CAMPOS.map((c) => d[c] ?? null);
 
-// Lista de medicamentos com saldo, lotes e próxima validade, com filtros
 medicamentosRouter.get(
   "/",
   wrap(async (req, res) => {
@@ -117,7 +114,6 @@ medicamentosRouter.get(
     );
     const saldo_total = lotes.rows.reduce((acc, l) => acc + l.saldo, 0);
     const saldo_utilizavel = lotes.rows.filter((l) => l.dias_para_vencer >= 0).reduce((acc, l) => acc + l.saldo, 0);
-    // Lote sugerido para a próxima venda: o que vence primeiro entre os válidos com saldo (FEFO)
     const fefo = lotes.rows.find((l) => l.saldo > 0 && l.dias_para_vencer >= 0);
     res.json({
       ...med.rows[0],
@@ -177,7 +173,6 @@ medicamentosRouter.delete(
   })
 );
 
-// Cadastro de lote; a quantidade inicial vira uma movimentação de entrada
 medicamentosRouter.post(
   "/:id/lotes",
   wrap(async (req, res) => {

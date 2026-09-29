@@ -1,5 +1,3 @@
-// Vocabulário regulatório usado nos cadastros e nas regras de negócio
-
 export const CATEGORIAS = [
   "Analgésicos e antitérmicos",
   "Anti-inflamatórios",
@@ -35,7 +33,6 @@ export const TARJAS = {
   preta: "Tarja preta",
 };
 
-// Controle especial: antimicrobianos (RDC 471/2021) e listas da Portaria SVS/MS 344/1998
 export const CONTROLES = {
   antimicrobiano: { rotulo: "Antimicrobiano", receita: "Receita em 2 vias, retida", validadeDias: 10, exigeNumero: false },
   A1: { rotulo: "Lista A1 (entorpecentes)", receita: "Notificação de Receita A (amarela)", exigeNumero: true },

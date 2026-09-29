@@ -1,12 +1,3 @@
-// Catálogo de demonstração: medicamentos comuns no varejo farmacêutico brasileiro.
-// Nomes, princípios ativos, tarjas e controles seguem a regulação brasileira;
-// fabricantes, preços e códigos de barras são ilustrativos (EAN de uso interno, prefixo 200).
-//
-// Campos: [nome, princípio ativo, fabricante, apresentação, categoria, tipo, tarja,
-//          controle especial, refrigerado, preço de venda, custo, estoque mínimo, vendas/mês, cenário]
-// Cenários de demonstração: vencido (lote vencido ainda no estoque), baixado (lote vencido já descartado),
-// vence30 (lote vencendo em até 30 dias), vence90, baixo (estoque abaixo do mínimo), avaria.
-
 const AN = "Analgésicos e antitérmicos";
 const AI = "Anti-inflamatórios";
 const CV = "Anti-hipertensivos e cardiovasculares";
@@ -130,7 +121,6 @@ export const CATALOGO_DEMO = [
 
 export const FORNECEDORES = ["Distribuidora Nordeste", "Drogaria Atacado PB", "Medfarma Distribuição", "Santa Cruz Distribuidora"];
 
-// Prescritores e pacientes fictícios, usados nas saídas de medicamentos controlados
 export const PRESCRITORES = [
   ["Dra. Helena Duarte", "CRM-PB 10234"],
   ["Dr. Rafael Nóbrega", "CRM-PB 8876"],

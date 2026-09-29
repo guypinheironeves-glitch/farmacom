@@ -1,4 +1,3 @@
-// Cliente da API: adiciona o token de login e trata os erros em português
 const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const CHAVE_TOKEN = "farmacom.token";
 
@@ -64,7 +63,6 @@ export async function api(caminho, { method = "GET", body } = {}) {
   return dados;
 }
 
-// Mensagem de erro com o detalhe do primeiro campo inválido, quando houver
 export function mensagemDeErro(err) {
   if (err instanceof ApiError && err.detalhes.length) return `${err.message} ${err.detalhes[0].mensagem}`;
   return err.message;

@@ -6,11 +6,9 @@ import { Aviso, Campo } from "./ui.jsx";
 
 const RECEITA_VAZIA = { receita_numero: "", receita_data: "", prescritor_nome: "", prescritor_registro: "", paciente_nome: "" };
 
-// Lote que deve sair primeiro: o válido, com saldo, que vence antes (FEFO)
 const loteFefo = (lotes) =>
   lotes.filter((l) => l.saldo > 0 && l.dias_para_vencer >= 0).sort((a, b) => a.dias_para_vencer - b.dias_para_vencer)[0];
 
-// Formulário de movimentação. Com "lote" definido, o lote já vem escolhido.
 export default function FormMovimentacao({ lote, aoSalvar, aoCancelar }) {
   const catalogo = useCatalogo();
   const [medicamentos, setMedicamentos] = useState([]);
@@ -48,7 +46,6 @@ export default function FormMovimentacao({ lote, aoSalvar, aoCancelar }) {
   const pedeReceita = tipo === "saida" && Boolean(controle);
   const exigeNumero = controle && controle !== "antimicrobiano" && /^[AB]|C2/.test(controle);
 
-  // Lote vencido: sugere baixa por vencimento em vez de venda
   useEffect(() => {
     if (vencido && tipo === "saida") setTipo("baixa_vencimento");
   }, [vencido, tipo]);

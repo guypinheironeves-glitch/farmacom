@@ -1,4 +1,3 @@
-// Formatação no padrão brasileiro
 export const dataBR = (iso) => {
   if (!iso) return "-";
   const [a, m, d] = iso.slice(0, 10).split("-");
@@ -13,7 +12,6 @@ export const moeda = (v) =>
 
 export const numero = (v) => (Number(v) || 0).toLocaleString("pt-BR");
 
-// Data de hoje (fuso do navegador) no formato AAAA-MM-DD, com deslocamento em dias
 export const hojeISO = (deslocamento = 0) => {
   const d = new Date();
   d.setDate(d.getDate() + deslocamento);
@@ -27,7 +25,6 @@ export const TIPOS_MOV = {
   baixa_avaria: { rotulo: "Baixa por avaria", sinal: "-", classe: "baixa" },
 };
 
-// Situação de validade de um lote
 export function situacaoValidade(dias) {
   if (dias === null || dias === undefined) return { rotulo: "-", classe: "neutro" };
   if (dias < 0) return { rotulo: `Vencido há ${-dias} ${-dias === 1 ? "dia" : "dias"}`, classe: "perigo" };
@@ -37,7 +34,6 @@ export function situacaoValidade(dias) {
   return { rotulo: "Dentro da validade", classe: "ok" };
 }
 
-// Gera e baixa um arquivo CSV (abre no Excel com acentos corretos)
 export function baixarCSV(nomeArquivo, colunas, linhas) {
   const esc = (v) => {
     const s = v === null || v === undefined ? "" : String(v);
@@ -55,14 +51,12 @@ export function baixarCSV(nomeArquivo, colunas, linhas) {
   URL.revokeObjectURL(url);
 }
 
-// Valor abreviado para rótulos de gráfico: R$ 1,2 mil
 export const moedaCurta = (v) => {
   const n = Number(v) || 0;
   if (n >= 1000) return `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
   return `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
 };
 
-// "2026-10" -> "out" (ou "outubro de 2026")
 export const nomeMes = (aaaamm, longo = false) => {
   const [a, m] = aaaamm.split("-").map(Number);
   const d = new Date(a, m - 1, 1);

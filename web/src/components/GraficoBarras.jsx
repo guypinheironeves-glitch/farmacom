@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-// Gráfico de colunas de uma série, com rótulo nas colunas e dica ao passar o mouse
 export default function GraficoBarras({ dados, formatarValor, formatarRotulo, descricao, altura = 190 }) {
   const [ativo, setAtivo] = useState(null);
   const largura = 560;
@@ -22,7 +21,6 @@ export default function GraficoBarras({ dados, formatarValor, formatarRotulo, de
           const r = Math.min(4, h / 2);
           return (
             <g key={d.chave} onMouseEnter={() => setAtivo(i)} onMouseLeave={() => setAtivo(null)} onFocus={() => setAtivo(i)} onBlur={() => setAtivo(null)} tabIndex={0}>
-              {/* área de toque maior que a coluna */}
               <rect x={margem.lado + passo * i} y={margem.topo - 10} width={passo} height={areaAltura + 10} fill="transparent" />
               {h > 0 && (
                 <path

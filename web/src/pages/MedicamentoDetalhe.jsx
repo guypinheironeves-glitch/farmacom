@@ -16,6 +16,7 @@ export default function MedicamentoDetalhe() {
   const [aviso, setAviso] = useState("");
   const [editando, setEditando] = useState(false);
   const [novoLote, setNovoLote] = useState(false);
+  const [loteEditado, setLoteEditado] = useState(null);
   const [movLote, setMovLote] = useState(null);
 
   const carregar = useCallback(() => {
@@ -44,7 +45,6 @@ export default function MedicamentoDetalhe() {
       <Link to="/medicamentos" className="voltar"><Icone nome="voltar" tamanho={18} /> Medicamentos</Link>
 
       <div className="detalhe-topo">
-        {/* Cabeçalho no formato de uma embalagem, com a tarja e a frase obrigatória */}
         <div className={`embalagem embalagem-${med.tarja}`}>
           <div className="embalagem-corpo">
             {med.tipo === "generico" && (
@@ -123,7 +123,8 @@ export default function MedicamentoDetalhe() {
                     <td>{l.fornecedor || "-"}</td>
                     <td className="num">{l.preco_custo === null ? "-" : moeda(l.preco_custo)}</td>
                     <td className="num">{numero(l.saldo)}</td>
-                    <td className="num">
+                    <td className="num acoes-lote">
+                      <button className="botao botao-pequeno" onClick={() => setLoteEditado(l)}>Editar</button>
                       <button className="botao botao-pequeno" onClick={() => setMovLote({ ...l, medicamento_id: med.id, controle_especial: med.controle_especial })}>
                         Movimentar
                       </button>
@@ -139,6 +140,14 @@ export default function MedicamentoDetalhe() {
 
       {editando && (
         <FormMedicamento inicial={med} aoFechar={() => setEditando(false)} aoSalvar={() => { setEditando(false); setAviso("Alterações salvas."); carregar(); }} />
+      )}
+      {loteEditado && (
+        <FormLote
+          medicamentoId={med.id}
+          lote={loteEditado}
+          aoFechar={() => setLoteEditado(null)}
+          aoSalvar={(l) => { setLoteEditado(null); setAviso(`Lote ${l.codigo} atualizado.`); carregar(); }}
+        />
       )}
       {novoLote && (
         <FormLote
@@ -160,8 +169,12 @@ export default function MedicamentoDetalhe() {
   );
 }
 
-function FormLote({ medicamentoId, aoFechar, aoSalvar }) {
-  const [dados, setDados] = useState({ codigo: "", validade: "", fornecedor: "", preco_custo: "", quantidade_inicial: "" });
+function FormLote({ medicamentoId, lote, aoFechar, aoSalvar }) {
+  const [dados, setDados] = useState(
+    lote
+      ? { codigo: lote.codigo, validade: lote.validade, fornecedor: lote.fornecedor || "", preco_custo: lote.preco_custo ?? "" }
+      : { codigo: "", validade: "", fornecedor: "", preco_custo: "", quantidade_inicial: "" }
+  );
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
   const muda = (c) => (e) => setDados({ ...dados, [c]: e.target.value });
@@ -171,17 +184,19 @@ function FormLote({ medicamentoId, aoFechar, aoSalvar }) {
     setErro("");
     setSalvando(true);
     try {
-      const lote = await api(`/medicamentos/${medicamentoId}/lotes`, {
-        method: "POST",
-        body: {
-          codigo: dados.codigo,
-          validade: dados.validade,
-          fornecedor: dados.fornecedor || null,
-          preco_custo: dados.preco_custo === "" ? null : Number(dados.preco_custo),
-          quantidade_inicial: Number(dados.quantidade_inicial) || 0,
-        },
-      });
-      aoSalvar(lote);
+      const corpo = {
+        codigo: dados.codigo,
+        validade: dados.validade,
+        fornecedor: dados.fornecedor || null,
+        preco_custo: dados.preco_custo === "" ? null : Number(dados.preco_custo),
+      };
+      const salvo = lote
+        ? await api(`/lotes/${lote.id}`, { method: "PUT", body: corpo })
+        : await api(`/medicamentos/${medicamentoId}/lotes`, {
+            method: "POST",
+            body: { ...corpo, quantidade_inicial: Number(dados.quantidade_inicial) || 0 },
+          });
+      aoSalvar(salvo);
     } catch (err) {
       setErro(mensagemDeErro(err));
       setSalvando(false);
@@ -189,7 +204,7 @@ function FormLote({ medicamentoId, aoFechar, aoSalvar }) {
   };
 
   return (
-    <Modal titulo="Receber lote" aoFechar={aoFechar}>
+    <Modal titulo={lote ? `Editar lote ${lote.codigo}` : "Receber lote"} aoFechar={aoFechar}>
       <form onSubmit={enviar} className="form">
         <div className="form-grade">
           <Campo rotulo="Código do lote *"><input value={dados.codigo} onChange={muda("codigo")} required autoFocus /></Campo>
@@ -202,17 +217,20 @@ function FormLote({ medicamentoId, aoFechar, aoSalvar }) {
         )}
         <Campo rotulo="Fornecedor"><input value={dados.fornecedor} onChange={muda("fornecedor")} /></Campo>
         <div className="form-grade">
-          <Campo rotulo="Quantidade recebida" dica="Entra no estoque como entrada.">
-            <input type="number" min="0" step="1" value={dados.quantidade_inicial} onChange={muda("quantidade_inicial")} />
-          </Campo>
+          {!lote && (
+            <Campo rotulo="Quantidade recebida" dica="Entra no estoque como entrada.">
+              <input type="number" min="0" step="1" value={dados.quantidade_inicial} onChange={muda("quantidade_inicial")} />
+            </Campo>
+          )}
           <Campo rotulo="Custo unitário (R$)" dica="Usado no cálculo de perdas.">
             <input type="number" min="0" step="0.01" value={dados.preco_custo} onChange={muda("preco_custo")} />
           </Campo>
         </div>
+        {lote && <p className="nota">Para mudar a quantidade, registre uma movimentação.</p>}
         <Aviso>{erro}</Aviso>
         <div className="form-acoes">
           <button type="button" className="botao" onClick={aoFechar}>Cancelar</button>
-          <button className="botao botao-primario" disabled={salvando}>{salvando ? "Salvando…" : "Registrar recebimento"}</button>
+          <button className="botao botao-primario" disabled={salvando}>{salvando ? "Salvando…" : lote ? "Salvar lote" : "Registrar recebimento"}</button>
         </div>
       </form>
     </Modal>

@@ -29,8 +29,6 @@ export function createApp() {
 
   app.use((_req, res) => res.status(404).json({ erro: "Rota não encontrada." }));
 
-  // Tratamento central de erros
-  // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     if (err instanceof ZodError) {
       return res.status(400).json({

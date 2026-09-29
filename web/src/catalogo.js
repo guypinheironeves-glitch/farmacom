@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
 
-// Vocabulário regulatório (categorias, tarjas, controles), carregado uma vez da API
 let cache = null;
 let pendente = null;
 
@@ -17,7 +16,6 @@ export function useCatalogo() {
   return catalogo;
 }
 
-// Texto oficial impresso na tarja da embalagem (RDC 71/2009)
 export const FRASE_TARJA = {
   sem_tarja: null,
   vermelha: "Venda sob prescrição médica",

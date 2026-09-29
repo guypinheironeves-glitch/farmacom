@@ -17,7 +17,6 @@ function periodo(req) {
   });
 }
 
-// Perdas: baixas por vencimento e por avaria no período, com valor pelo preço de custo do lote
 relatoriosRouter.get(
   "/perdas",
   wrap(async (req, res) => {
@@ -51,7 +50,6 @@ relatoriosRouter.get(
   })
 );
 
-// Movimentação: totais por tipo e por medicamento no período
 relatoriosRouter.get(
   "/movimentacao",
   wrap(async (req, res) => {
@@ -79,8 +77,6 @@ relatoriosRouter.get(
   })
 );
 
-// Curva ABC: classifica os medicamentos pelo faturamento das vendas no período
-// A = até 80% do faturamento acumulado, B = de 80% a 95%, C = o restante
 relatoriosRouter.get(
   "/curva-abc",
   wrap(async (req, res) => {
@@ -124,7 +120,6 @@ relatoriosRouter.get(
   })
 );
 
-// Livro de medicamentos com controle especial: saídas com os dados da receita (base para o SNGPC)
 relatoriosRouter.get(
   "/controlados",
   wrap(async (req, res) => {
