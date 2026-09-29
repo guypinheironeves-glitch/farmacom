@@ -1,10 +1,28 @@
 import { fileURLToPath } from "node:url";
 import { hojeISO, pool } from "../src/db.js";
 import { hashSenha } from "../src/auth.js";
-import { setupDatabase } from "./setup.js";
+import { migrar, resetar } from "./banco.js";
 import { CATALOGO_DEMO, FORNECEDORES, PACIENTES, PRESCRITORES } from "./catalogo-demo.js";
 
 export const USUARIO_DEMO = { nome: "Proprietário Demo", email: "demo@farmacom.app", senha: "farmacom123" };
+export const ATENDENTE_DEMO = { nome: "Atendente Demo", email: "atendente@farmacom.app", senha: "farmacom123" };
+
+function cnpjFicticio(filial) {
+  const base = `11222333${String(filial).padStart(4, "0")}`;
+  const dv = (numeros, pesos) => {
+    const resto = numeros.split("").reduce((acc, d, i) => acc + Number(d) * pesos[i], 0) % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const p1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const d1 = dv(base, p1);
+  return `${base}${d1}${dv(base + d1, [6, ...p1])}`;
+}
+
+function chaveNfe(cnpj, numero, diasAtras) {
+  const d = new Date(Date.now() - diasAtras * 86400000);
+  const aamm = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return `25${aamm}${cnpj}55001${String(numero).padStart(9, "0")}1${String(numero * 7919).padStart(8, "0").slice(-8)}0`;
+}
 
 function gerador(semente) {
   let s = semente >>> 0;
@@ -31,7 +49,7 @@ function planejar(item, indice) {
   const vendasMes = Math.max(3, Math.round(demanda ** 1.7 / 12));
   const tem = (c) => (cenario || "").split(" ").includes(c);
   const lotes = [];
-  const fornecedor = () => FORNECEDORES[Math.floor(rnd() * FORNECEDORES.length)];
+  const fornecedor = () => Math.floor(rnd() * FORNECEDORES.length);
   const custoLote = (fator = 1) => Number((custo * fator).toFixed(2));
 
   if (tem("vencido")) {
@@ -105,7 +123,8 @@ function planejar(item, indice) {
 }
 
 export async function seedDatabase({ recriar = true } = {}) {
-  if (recriar) await setupDatabase();
+  if (recriar) await resetar();
+  await migrar();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -114,23 +133,50 @@ export async function seedDatabase({ recriar = true } = {}) {
       [USUARIO_DEMO.nome, USUARIO_DEMO.email, await hashSenha(USUARIO_DEMO.senha)]
     );
     const usuarioId = u.rows[0].id;
+    await client.query("UPDATE usuarios SET perfil = 'administrador' WHERE id = $1", [usuarioId]);
+    await client.query(
+      "INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES ($1, $2, $3, 'atendente')",
+      [ATENDENTE_DEMO.nome, ATENDENTE_DEMO.email, await hashSenha(ATENDENTE_DEMO.senha)]
+    );
+    await client.query("INSERT INTO configuracoes (chave, valor) VALUES ('farmacia', $1)", [
+      JSON.stringify({
+        nome: "Farmácia Bem-Estar (fictícia)",
+        cnpj: "11222333000181",
+        cidade: "Campina Grande",
+        uf: "PB",
+        responsavel_tecnico: "Dra. Renata Albuquerque",
+        crf: "CRF-PB 0000",
+        cpf_responsavel: "12345678909",
+      }),
+    ]);
+    const fornecedorIds = [];
+    for (const f of FORNECEDORES) {
+      const r = await client.query(
+        "INSERT INTO fornecedores (nome, cnpj, telefone, contato) VALUES ($1, $2, $3, $4) RETURNING id, cnpj",
+        [f.nome, cnpjFicticio(f.filial), f.telefone, f.contato]
+      );
+      fornecedorIds.push(r.rows[0]);
+    }
+    let numeroNota = 1000;
 
     for (let indice = 0; indice < CATALOGO_DEMO.length; indice++) {
       const item = CATALOGO_DEMO[indice];
       const [nome, principio, fabricante, apresentacao, categoria, tipo, tarja, controle, refrigerado, preco, , minimo] = item;
       const m = await client.query(
         `INSERT INTO medicamentos (nome, principio_ativo, fabricante, apresentacao, categoria, tipo, tarja,
-                                   controle_especial, refrigerado, codigo_barras, preco_venda, estoque_minimo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
-        [nome, principio, fabricante, apresentacao, categoria, tipo, tarja, controle, refrigerado, ean(indice + 1), preco, minimo]
+                                   controle_especial, refrigerado, codigo_barras, registro_anvisa, preco_venda, estoque_minimo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+        [nome, principio, fabricante, apresentacao, categoria, tipo, tarja, controle, refrigerado, ean(indice + 1),
+          `9${String(indice + 1).padStart(12, "0")}`, preco, minimo]
       );
       const { lotes, movimentos } = planejar(item, indice);
       const ids = [];
       for (const l of lotes) {
         const r = await client.query(
-          `INSERT INTO lotes (medicamento_id, codigo, validade, fornecedor, preco_custo)
-           VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          [m.rows[0].id, l.codigo, hojeISO(l.validade), l.fornecedor, l.custo]
+          `INSERT INTO lotes (medicamento_id, codigo, validade, fornecedor_id, preco_custo, nota_fiscal)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+          [m.rows[0].id, l.codigo, hojeISO(l.validade), fornecedorIds[l.fornecedor].id, l.custo,
+            chaveNfe(fornecedorIds[l.fornecedor].cnpj, numeroNota++, l.diasAtras)]
         );
         ids.push(r.rows[0].id);
       }

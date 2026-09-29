@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe25260911222333000505550010000045871000045870" versao="4.00">
+      <ide>
+        <cUF>25</cUF>
+        <natOp>Venda de mercadoria</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>4587</nNF>
+        <dhEmi>2026-09-28T09:15:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+      </ide>
+      <emit>
+        <CNPJ>11222333000505</CNPJ>
+        <xNome>Farmadistri Comércio de Medicamentos (fictícia)</xNome>
+        <enderEmit>
+          <xLgr>Rua Exemplo</xLgr>
+          <nro>100</nro>
+          <xMun>João Pessoa</xMun>
+          <UF>PB</UF>
+          <fone>8332470000</fone>
+        </enderEmit>
+      </emit>
+      <dest>
+        <CNPJ>11222333000181</CNPJ>
+        <xNome>Farmácia Bem-Estar (fictícia)</xNome>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>LOS50</cProd>
+          <cEAN>2000000000152</cEAN>
+          <xProd>LOSARTANA POTASSICA 50MG CX 30 COMP</xProd>
+          <NCM>30049069</NCM>
+          <uCom>CX</uCom>
+          <qCom>60.0000</qCom>
+          <vUnCom>4.0500</vUnCom>
+          <vProd>243.00</vProd>
+          <cEANTrib>2000000000152</cEANTrib>
+          <rastro>
+            <nLote>LS27A01</nLote>
+            <qLote>40.000</qLote>
+            <dFab>2026-06-10</dFab>
+            <dVal>2028-06-30</dVal>
+          </rastro>
+          <rastro>
+            <nLote>LS27A02</nLote>
+            <qLote>20.000</qLote>
+            <dFab>2026-07-02</dFab>
+            <dVal>2028-07-31</dVal>
+          </rastro>
+          <med>
+            <cProdANVISA>9000000000015</cProdANVISA>
+            <vPMC>12.90</vPMC>
+          </med>
+        </prod>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>AMX500</cProd>
+          <cEAN>2000000000336</cEAN>
+          <xProd>AMOXICILINA 500MG CX 21 CAPS</xProd>
+          <NCM>30041012</NCM>
+          <uCom>CX</uCom>
+          <qCom>20.0000</qCom>
+          <vUnCom>9.6000</vUnCom>
+          <vProd>192.00</vProd>
+          <rastro>
+            <nLote>AM27B11</nLote>
+            <qLote>20.000</qLote>
+            <dFab>2026-05-20</dFab>
+            <dVal>2028-05-31</dVal>
+          </rastro>
+        </prod>
+      </det>
+      <det nItem="3">
+        <prod>
+          <cProd>CLZ2</cProd>
+          <cEAN>2000000000572</cEAN>
+          <xProd>CLONAZEPAM 2MG CX 30 COMP</xProd>
+          <NCM>30049069</NCM>
+          <uCom>CX</uCom>
+          <qCom>10.0000</qCom>
+          <vUnCom>4.1000</vUnCom>
+          <vProd>41.00</vProd>
+          <rastro>
+            <nLote>CL27C05</nLote>
+            <qLote>10.000</qLote>
+            <dFab>2026-04-15</dFab>
+            <dVal>2028-04-30</dVal>
+          </rastro>
+        </prod>
+      </det>
+      <det nItem="4">
+        <prod>
+          <cProd>PSF50</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>PROTETOR SOLAR FPS 50 120ML</xProd>
+          <NCM>33049990</NCM>
+          <uCom>UN</uCom>
+          <qCom>6.0000</qCom>
+          <vUnCom>28.5000</vUnCom>
+          <vProd>171.00</vProd>
+        </prod>
+      </det>
+      <total>
+        <ICMSTot>
+          <vNF>647.00</vNF>
+        </ICMSTot>
+      </total>
+      <infAdic>
+        <infCpl>Nota fiscal fictícia para demonstração do FarmaCom. Não tem validade fiscal.</infCpl>
+      </infAdic>
+    </infNFe>
+  </NFe>
+</nfeProc>

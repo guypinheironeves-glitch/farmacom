@@ -34,7 +34,7 @@ alertasRouter.get(
        ), vendas AS (
          SELECT l.medicamento_id AS id, SUM(mv.quantidade)::INTEGER AS vendidos
            FROM movimentacoes mv JOIN lotes l ON l.id = mv.lote_id
-          WHERE mv.tipo = 'saida' AND mv.criado_em >= now() - INTERVAL '30 days'
+          WHERE mv.tipo = 'saida' AND NOT mv.estornada AND mv.criado_em >= now() - INTERVAL '30 days'
           GROUP BY l.medicamento_id
        )
        SELECT m.id AS medicamento_id, m.nome AS medicamento, m.estoque_minimo, m.fabricante,

@@ -1,12 +1,22 @@
 import { Router } from "express";
 import { z } from "zod";
 import { hojeISO, query, transaction } from "../db.js";
-import { HttpError, wrap } from "../http-error.js";
+import { HttpError, parseId, wrap } from "../http-error.js";
+import { somenteAdministrador } from "../auth.js";
 import { CONTROLES } from "../catalogo.js";
 
 export const movimentacoesRouter = Router();
 
 export const TIPOS = ["entrada", "saida", "baixa_vencimento", "baixa_avaria"];
+const TODOS_TIPOS = [...TIPOS, "ajuste_entrada", "ajuste_saida"];
+const INVERSO = {
+  entrada: "ajuste_saida",
+  ajuste_entrada: "ajuste_saida",
+  saida: "ajuste_entrada",
+  baixa_vencimento: "ajuste_entrada",
+  baixa_avaria: "ajuste_entrada",
+  ajuste_saida: "ajuste_entrada",
+};
 
 const texto = (max) => z.string().trim().max(max).optional().nullable().transform((v) => (v ? v : null));
 
@@ -51,7 +61,7 @@ movimentacoesRouter.get(
   "/",
   wrap(async (req, res) => {
     const limite = Math.min(Number(req.query.limite) || 50, 500);
-    const tipo = TIPOS.includes(req.query.tipo) ? req.query.tipo : null;
+    const tipo = TODOS_TIPOS.includes(req.query.tipo) ? req.query.tipo : null;
     const { rows } = await query(
       `SELECT mv.*, l.codigo AS lote, l.validade, m.id AS medicamento_id, m.nome AS medicamento,
               m.controle_especial, u.nome AS usuario
@@ -116,5 +126,41 @@ movimentacoesRouter.post(
       return { ...rows[0], saldo_lote: saldo.rows[0].saldo };
     });
     res.status(201).json(mov);
+  })
+);
+
+const estornoSchema = z.object({
+  motivo: z.string().trim().min(3, "Informe o motivo do estorno.").max(200),
+});
+
+movimentacoesRouter.post(
+  "/:id/estorno",
+  somenteAdministrador,
+  wrap(async (req, res) => {
+    const id = parseId(req.params.id);
+    const { motivo } = estornoSchema.parse(req.body);
+    const estorno = await transaction(async (db) => {
+      const { rows } = await db.query("SELECT * FROM movimentacoes WHERE id = $1 FOR UPDATE", [id]);
+      const original = rows[0];
+      if (!original) throw new HttpError(404, "Movimentação não encontrada.");
+      if (original.estornada) throw new HttpError(409, "Esta movimentação já foi estornada.");
+      if (original.estorno_de) throw new HttpError(409, "Um estorno não pode ser estornado.");
+      await db.query("SELECT id FROM lotes WHERE id = $1 FOR UPDATE", [original.lote_id]);
+      const tipo = INVERSO[original.tipo];
+      if (tipo === "ajuste_saida") {
+        const saldo = await db.query("SELECT saldo FROM saldo_lotes WHERE lote_id = $1", [original.lote_id]);
+        if (saldo.rows[0].saldo < original.quantidade) {
+          throw new HttpError(422, `O lote não tem saldo suficiente para estornar (saldo atual ${saldo.rows[0].saldo}).`);
+        }
+      }
+      await db.query("UPDATE movimentacoes SET estornada = true WHERE id = $1", [id]);
+      const novo = await db.query(
+        `INSERT INTO movimentacoes (lote_id, tipo, quantidade, observacao, estorno_de, usuario_id)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [original.lote_id, tipo, original.quantidade, `Estorno: ${motivo}`, id, req.usuario.id]
+      );
+      return novo.rows[0];
+    });
+    res.status(201).json(estorno);
   })
 );

@@ -119,7 +119,12 @@ export const CATALOGO_DEMO = [
   ["Sildenafila 50 mg", "Citrato de sildenafila", "Neo Química", "Caixa com 4 comprimidos", UR, G, V, null, false, 17.9, 5.8, 10, 20, "vencido"],
 ];
 
-export const FORNECEDORES = ["Distribuidora Nordeste", "Drogaria Atacado PB", "Medfarma Distribuição", "Santa Cruz Distribuidora"];
+export const FORNECEDORES = [
+  { nome: "Distribuidora Nordeste de Medicamentos", filial: 2, telefone: "8332150000", contato: "Carla Menezes" },
+  { nome: "Atacado Farma Paraíba", filial: 3, telefone: "8333210000", contato: "Rodrigo Lins" },
+  { nome: "Medfarma Distribuição", filial: 4, telefone: "8130450000", contato: "Fernanda Sá" },
+  { nome: "Santa Luzia Distribuidora", filial: 6, telefone: "8421030000", contato: "Paulo Diniz" },
+];
 
 export const PRESCRITORES = [
   ["Dra. Helena Duarte", "CRM-PB 10234"],

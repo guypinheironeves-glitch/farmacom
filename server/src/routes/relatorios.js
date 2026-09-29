@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { TIMEZONE, hojeISO, query } from "../db.js";
 import { wrap } from "../http-error.js";
+import { conferirSngpc, gerarSngpc } from "../sngpc.js";
 
 export const relatoriosRouter = Router();
 
@@ -28,7 +29,7 @@ relatoriosRouter.get(
          FROM movimentacoes mv
          JOIN lotes l ON l.id = mv.lote_id
          JOIN medicamentos m ON m.id = l.medicamento_id
-        WHERE mv.tipo IN ('baixa_vencimento', 'baixa_avaria')
+        WHERE NOT mv.estornada AND mv.estorno_de IS NULL AND mv.tipo IN ('baixa_vencimento', 'baixa_avaria')
           AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
         GROUP BY m.id, m.nome, l.codigo, l.validade, mv.tipo
         ORDER BY valor DESC, m.nome`,
@@ -58,11 +59,12 @@ relatoriosRouter.get(
       `SELECT m.id AS medicamento_id, m.nome AS medicamento,
               COALESCE(SUM(mv.quantidade) FILTER (WHERE mv.tipo = 'entrada'), 0)::INTEGER AS entradas,
               COALESCE(SUM(mv.quantidade) FILTER (WHERE mv.tipo = 'saida'), 0)::INTEGER AS saidas,
-              COALESCE(SUM(mv.quantidade) FILTER (WHERE mv.tipo IN ('baixa_vencimento', 'baixa_avaria')), 0)::INTEGER AS baixas
+              COALESCE(SUM(mv.quantidade) FILTER (WHERE mv.tipo IN ('baixa_vencimento', 'baixa_avaria')), 0)::INTEGER AS baixas,
+              COALESCE(SUM(CASE WHEN mv.tipo = 'ajuste_entrada' THEN mv.quantidade WHEN mv.tipo = 'ajuste_saida' THEN -mv.quantidade END), 0)::INTEGER AS ajustes
          FROM movimentacoes mv
          JOIN lotes l ON l.id = mv.lote_id
          JOIN medicamentos m ON m.id = l.medicamento_id
-        WHERE (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
+        WHERE NOT mv.estornada AND mv.estorno_de IS NULL AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
         GROUP BY m.id, m.nome
         ORDER BY m.nome`,
       [inicio, fim, TIMEZONE]
@@ -71,7 +73,7 @@ relatoriosRouter.get(
     res.json({
       inicio,
       fim,
-      totais: { entradas: total("entradas"), saidas: total("saidas"), baixas: total("baixas") },
+      totais: { entradas: total("entradas"), saidas: total("saidas"), baixas: total("baixas"), ajustes: total("ajustes") },
       itens: rows,
     });
   })
@@ -88,7 +90,7 @@ relatoriosRouter.get(
          FROM movimentacoes mv
          JOIN lotes l ON l.id = mv.lote_id
          JOIN medicamentos m ON m.id = l.medicamento_id
-        WHERE mv.tipo = 'saida' AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
+        WHERE NOT mv.estornada AND mv.estorno_de IS NULL AND mv.tipo = 'saida' AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
         GROUP BY m.id, m.nome, m.categoria
         ORDER BY faturamento DESC, quantidade DESC, m.nome`,
       [inicio, fim, TIMEZONE]
@@ -131,11 +133,30 @@ relatoriosRouter.get(
          FROM movimentacoes mv
          JOIN lotes l ON l.id = mv.lote_id
          JOIN medicamentos m ON m.id = l.medicamento_id
-        WHERE mv.tipo = 'saida' AND m.controle_especial IS NOT NULL
+        WHERE NOT mv.estornada AND mv.estorno_de IS NULL AND mv.tipo = 'saida' AND m.controle_especial IS NOT NULL
           AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
         ORDER BY mv.criado_em DESC`,
       [inicio, fim, TIMEZONE]
     );
     res.json({ inicio, fim, total_unidades: rows.reduce((a, r) => a + r.quantidade, 0), itens: rows });
+  })
+);
+
+relatoriosRouter.get(
+  "/sngpc",
+  wrap(async (req, res) => {
+    const { inicio, fim } = periodo(req);
+    res.json(await conferirSngpc(inicio, fim));
+  })
+);
+
+relatoriosRouter.get(
+  "/sngpc/arquivo",
+  wrap(async (req, res) => {
+    const { inicio, fim } = periodo(req);
+    const xml = await gerarSngpc(inicio, fim);
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="sngpc-${inicio}-a-${fim}.xml"`);
+    res.send(xml);
   })
 );

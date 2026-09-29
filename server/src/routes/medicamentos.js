@@ -2,20 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { hojeISO, query, transaction } from "../db.js";
 import { HttpError, parseId, wrap } from "../http-error.js";
+import { somenteAdministrador } from "../auth.js";
+import { eanValido } from "../validacao.js";
 import { CATEGORIAS, CONTROLES, TARJAS, TIPOS_MEDICAMENTO } from "../catalogo.js";
 
 export const medicamentosRouter = Router();
 
 const texto = (max) => z.string().trim().max(max).optional().nullable().transform((v) => (v ? v : null));
-
-export function eanValido(codigo) {
-  if (!/^\d{13}$/.test(codigo)) return false;
-  const soma = codigo
-    .slice(0, 12)
-    .split("")
-    .reduce((acc, d, i) => acc + Number(d) * (i % 2 ? 3 : 1), 0);
-  return (10 - (soma % 10)) % 10 === Number(codigo[12]);
-}
 
 const medicamentoSchema = z
   .object({
@@ -35,6 +28,13 @@ const medicamentoSchema = z
       .nullable()
       .transform((v) => (v ? v : null))
       .refine((v) => v === null || eanValido(v), "Código de barras EAN-13 inválido."),
+    registro_anvisa: z
+      .string()
+      .trim()
+      .optional()
+      .nullable()
+      .transform((v) => (v ? v.replace(/\D/g, "") : null))
+      .refine((v) => v === null || /^\d{9,13}$/.test(v), "Registro na Anvisa deve ter de 9 a 13 dígitos."),
     preco_venda: z.coerce.number().min(0, "Não pode ser negativo.").optional().nullable(),
     estoque_minimo: z.coerce.number().int("Use um número inteiro.").min(0, "Não pode ser negativo.").default(0),
   })
@@ -50,14 +50,15 @@ const medicamentoSchema = z
 const loteSchema = z.object({
   codigo: z.string().trim().min(1, "Informe o código do lote.").max(60),
   validade: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data no formato AAAA-MM-DD."),
-  fornecedor: texto(160),
+  fornecedor_id: z.coerce.number().int().positive().optional().nullable(),
+  nota_fiscal: texto(44),
   preco_custo: z.coerce.number().min(0, "Não pode ser negativo.").optional().nullable(),
   quantidade_inicial: z.coerce.number().int().min(0, "Não pode ser negativa.").default(0),
 });
 
 const CAMPOS = [
   "nome", "principio_ativo", "fabricante", "apresentacao", "categoria", "tipo", "tarja",
-  "controle_especial", "refrigerado", "codigo_barras", "preco_venda", "estoque_minimo",
+  "controle_especial", "refrigerado", "codigo_barras", "registro_anvisa", "preco_venda", "estoque_minimo",
 ];
 const valores = (d) => CAMPOS.map((c) => d[c] ?? null);
 
@@ -100,8 +101,9 @@ medicamentosRouter.get(
     const med = await query("SELECT * FROM medicamentos WHERE id = $1", [id]);
     if (!med.rows[0]) throw new HttpError(404, "Medicamento não encontrado.");
     const lotes = await query(
-      `SELECT l.*, s.saldo, (l.validade - $2::DATE) AS dias_para_vencer
+      `SELECT l.*, s.saldo, f.nome AS fornecedor, (l.validade - $2::DATE) AS dias_para_vencer
          FROM lotes l JOIN saldo_lotes s ON s.lote_id = l.id
+         LEFT JOIN fornecedores f ON f.id = l.fornecedor_id
         WHERE l.medicamento_id = $1
         ORDER BY l.validade`,
       [id, hoje]
@@ -109,7 +111,7 @@ medicamentosRouter.get(
     const vendas = await query(
       `SELECT COALESCE(SUM(mv.quantidade), 0)::INTEGER AS total
          FROM movimentacoes mv JOIN lotes l ON l.id = mv.lote_id
-        WHERE l.medicamento_id = $1 AND mv.tipo = 'saida' AND mv.criado_em >= now() - INTERVAL '30 days'`,
+        WHERE l.medicamento_id = $1 AND mv.tipo = 'saida' AND NOT mv.estornada AND mv.criado_em >= now() - INTERVAL '30 days'`,
       [id]
     );
     const saldo_total = lotes.rows.reduce((acc, l) => acc + l.saldo, 0);
@@ -157,6 +159,7 @@ medicamentosRouter.put(
 
 medicamentosRouter.delete(
   "/:id",
+  somenteAdministrador,
   wrap(async (req, res) => {
     const id = parseId(req.params.id);
     const mov = await query(
@@ -182,9 +185,9 @@ medicamentosRouter.post(
       const med = await db.query("SELECT id FROM medicamentos WHERE id = $1", [medicamentoId]);
       if (!med.rows[0]) throw new HttpError(404, "Medicamento não encontrado.");
       const { rows } = await db.query(
-        `INSERT INTO lotes (medicamento_id, codigo, validade, fornecedor, preco_custo)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [medicamentoId, d.codigo, d.validade, d.fornecedor, d.preco_custo ?? null]
+        `INSERT INTO lotes (medicamento_id, codigo, validade, fornecedor_id, preco_custo, nota_fiscal)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [medicamentoId, d.codigo, d.validade, d.fornecedor_id ?? null, d.preco_custo ?? null, d.nota_fiscal]
       );
       if (d.quantidade_inicial > 0) {
         await db.query(

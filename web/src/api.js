@@ -13,7 +13,7 @@ export const sessao = {
     try {
       localStorage.setItem(CHAVE_TOKEN, token);
     } catch {
-      /* navegador sem armazenamento: a sessão dura até recarregar */
+      /* sem armazenamento */
     }
   },
   limpar() {
@@ -61,6 +61,17 @@ export async function api(caminho, { method = "GET", body } = {}) {
     throw new ApiError(res.status, dados);
   }
   return dados;
+}
+
+export async function baixarArquivo(caminho, nomeArquivo) {
+  const res = await fetch(`${BASE}/api${caminho}`, { headers: { Authorization: `Bearer ${sessao.token}` } });
+  if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function mensagemDeErro(err) {

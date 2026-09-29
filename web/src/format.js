@@ -23,6 +23,46 @@ export const TIPOS_MOV = {
   saida: { rotulo: "Saída (venda)", sinal: "-", classe: "saida" },
   baixa_vencimento: { rotulo: "Baixa por vencimento", sinal: "-", classe: "baixa" },
   baixa_avaria: { rotulo: "Baixa por avaria", sinal: "-", classe: "baixa" },
+  ajuste_entrada: { rotulo: "Ajuste (sobra)", sinal: "+", classe: "ajuste", automatico: true },
+  ajuste_saida: { rotulo: "Ajuste (falta)", sinal: "-", classe: "ajuste", automatico: true },
+};
+
+export function periodoDoDia(hora = new Date().getHours()) {
+  if (hora < 5) return { id: "madrugada", saudacao: "Boa madrugada", icone: "estrela" };
+  if (hora < 12) return { id: "manha", saudacao: "Bom dia", icone: "amanhecer" };
+  if (hora < 18) return { id: "tarde", saudacao: "Boa tarde", icone: "sol" };
+  return { id: "noite", saudacao: "Boa noite", icone: "lua" };
+}
+
+const FUSOS_BRASIL = {
+  "-2": "Horário de Fernando de Noronha",
+  "-3": "Horário de Brasília",
+  "-4": "Horário do Amazonas",
+  "-5": "Horário do Acre",
+};
+
+export function regiaoDoFuso(data = new Date()) {
+  const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const horas = -data.getTimezoneOffset() / 60;
+  const utc = `UTC${horas >= 0 ? "+" : "−"}${Math.abs(horas)}`;
+  const noBrasil = /^America\/(Sao_Paulo|Fortaleza|Recife|Bahia|Belem|Maceio|Araguaina|Santarem|Manaus|Cuiaba|Campo_Grande|Porto_Velho|Boa_Vista|Rio_Branco|Eirunepe|Noronha)$/.test(fuso) || fuso === "Brazil/East";
+  if (noBrasil && FUSOS_BRASIL[horas]) return `${FUSOS_BRASIL[horas]} (${utc})`;
+  const cidade = fuso.split("/").pop()?.replace(/_/g, " ");
+  return cidade ? `${cidade} (${utc})` : utc;
+}
+
+export const dataLocal = (iso) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "-");
+
+export const telefoneFormatado = (v) => {
+  const d = String(v || "").replace(/\D/g, "");
+  if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+  if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  return v || "";
+};
+
+export const cnpjFormatado = (v) => {
+  const d = String(v || "").replace(/\D/g, "");
+  return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : v || "-";
 };
 
 export function situacaoValidade(dias) {
