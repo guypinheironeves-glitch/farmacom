@@ -34,7 +34,7 @@ export function situacaoValidade(dias) {
   if (dias === 0) return { rotulo: "Vence hoje", classe: "perigo" };
   if (dias <= 30) return { rotulo: `Vence em ${dias} ${dias === 1 ? "dia" : "dias"}`, classe: "alerta" };
   if (dias <= 90) return { rotulo: `Vence em ${dias} dias`, classe: "atencao" };
-  return { rotulo: "Em dia", classe: "ok" };
+  return { rotulo: "Dentro da validade", classe: "ok" };
 }
 
 // Gera e baixa um arquivo CSV (abre no Excel com acentos corretos)
@@ -54,3 +54,19 @@ export function baixarCSV(nomeArquivo, colunas, linhas) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// Valor abreviado para rótulos de gráfico: R$ 1,2 mil
+export const moedaCurta = (v) => {
+  const n = Number(v) || 0;
+  if (n >= 1000) return `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  return `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
+};
+
+// "2026-10" -> "out" (ou "outubro de 2026")
+export const nomeMes = (aaaamm, longo = false) => {
+  const [a, m] = aaaamm.split("-").map(Number);
+  const d = new Date(a, m - 1, 1);
+  return longo
+    ? d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    : d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+};
