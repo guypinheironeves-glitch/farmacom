@@ -13,12 +13,14 @@ Linha do tempo em seis Sprints de duas semanas, conforme o Detalhamento do Proje
 
 ## O que o MVP já entrega
 
-- Cadastro, edição e exclusão de medicamentos
-- Cadastro de lotes com entrada inicial
-- Entradas, vendas e baixas com controle de saldo
-- Painel de alertas (validade em 30/60/90 dias e estoque baixo)
-- Relatórios de perdas e de movimentação, com exportação para planilha
-- Login, testes automatizados da API e integração contínua
+- Catálogo com 77 medicamentos e dados regulatórios (tarja, tipo, controle especial, EAN-13, refrigeração)
+- Cadastro, edição e exclusão de medicamentos, com filtros por categoria, tarja, controle e situação
+- Recebimento de lotes e movimentações com controle de saldo
+- Sugestão do lote que vence primeiro (FEFO) e bloqueio de venda de lote vencido
+- Receita obrigatória na venda de controlados e antimicrobianos
+- Painel com valor do estoque, gráfico de vencimentos, alertas e sugestão de compra
+- Relatórios de perdas, movimentação, curva ABC e livro de controlados, com exportação para planilha
+- Login, 21 testes automatizados da API e publicação no Render
 
 ## Tarefas para distribuir na Sprint 1 e 2
 
@@ -35,20 +37,22 @@ Cada integrante fica com tarefas ligadas à sua responsabilidade. Crie uma issue
 
 - [ ] Montar o quadro Kanban no GitHub Projects com as colunas e limites do Detalhamento (Pendências, Selecionado para a Sprint, Análise 2, Desenvolvimento 3, Teste 2, Homologação 3, Concluído)
 - [ ] Interface: formulário de edição de lote na tela do medicamento (a rota `PUT /api/lotes/:id` já existe)
-- [ ] Interface: filtro por tipo e por período na tela de movimentações
+- [ ] Interface: filtro por tipo na tela de movimentações (a API já aceita `GET /api/movimentacoes?tipo=saida`)
 - [ ] Conduzir a retrospectiva da Sprint 1 e registrar a melhoria escolhida
 
 ### João Guilherme: qualidade, banco de dados e publicação
 
 - [ ] Publicar o sistema no Render + Neon seguindo o README e colocar o link no topo do README
-- [ ] Testes: relatório de movimentação e exclusão de medicamento com e sem saídas
+- [ ] Testes: relatório de movimentação, livro de controlados e exclusão de medicamento com e sem saídas
 - [ ] Banco: índice e consulta para o histórico de movimentações de um lote
 - [ ] Escrever o roteiro dos testes de usabilidade (Sprint 5)
 
 ## Próximas funcionalidades (lista de pendências)
 
 - Cadastro de fornecedores como entidade própria
+- Entrada de lotes pela nota fiscal de compra (XML da NF-e)
+- Geração do arquivo para o SNGPC
 - Exportação de relatórios em PDF
 - Envio de alerta diário por e-mail ou WhatsApp
 - Perfis de acesso (proprietário e balconista)
-- Leitura de código de barras no cadastro de lotes
+- Leitura de código de barras pela câmera ou leitor no balcão
