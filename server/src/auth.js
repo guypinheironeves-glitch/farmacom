@@ -14,6 +14,7 @@ export const authRouter = Router();
 const limiteLogin = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: process.env.NODE_ENV === "test" ? 1000 : 10,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { erro: "Muitas tentativas de login. Aguarde alguns minutos e tente de novo." },

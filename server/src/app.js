@@ -19,6 +19,7 @@ import { catalogo } from "./catalogo.js";
 export function createApp() {
   const app = express();
 
+  app.set("trust proxy", 1);
   app.use(helmet());
   const origins = (process.env.CORS_ORIGIN || "").split(",").map((s) => s.trim()).filter(Boolean);
   app.use(cors(origins.length ? { origin: origins } : undefined));
