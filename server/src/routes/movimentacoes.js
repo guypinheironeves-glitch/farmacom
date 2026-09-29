@@ -29,7 +29,6 @@ const movSchema = z.object({
 
 const diasEntre = (inicio, fim) => Math.round((new Date(fim) - new Date(inicio)) / 86400000);
 
-// Regras de dispensação de medicamentos com controle especial (receita retida)
 export function validarReceita(controle, d, hoje) {
   const regra = CONTROLES[controle];
   if (!regra) return;
@@ -75,7 +74,6 @@ movimentacoesRouter.post(
     const d = movSchema.parse(req.body);
     const hoje = hojeISO();
     const mov = await transaction(async (db) => {
-      // trava o lote para evitar duas saídas simultâneas deixarem o saldo negativo
       const lote = await db.query(
         `SELECT l.id, l.validade, m.controle_especial
            FROM lotes l JOIN medicamentos m ON m.id = l.medicamento_id

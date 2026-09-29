@@ -1,4 +1,3 @@
-// Marca do FarmaCom: uma caixa de medicamento com a cruz da farmácia e a faixa da tarja
 export function MarcaIcone({ tamanho = 34, faixa = "#E8912D" }) {
   return (
     <svg width={tamanho} height={tamanho} viewBox="0 0 40 40" aria-hidden="true" className="marca-svg">

@@ -4,16 +4,14 @@ import { wrap } from "../http-error.js";
 
 export const alertasRouter = Router();
 
-const COBERTURA_DIAS = 30; // a sugestão de compra cobre 30 dias de vendas
+const COBERTURA_DIAS = 30;
 
-// Painel: alertas de validade, estoque baixo com sugestão de compra e visão do estoque
 alertasRouter.get(
   "/",
   wrap(async (req, res) => {
     const dias = Math.max(0, Math.min(Number(req.query.dias) || 60, 365));
     const hoje = hojeISO();
 
-    // Lotes com saldo que vencem dentro do prazo, incluindo os já vencidos
     const validade = await query(
       `SELECT l.id AS lote_id, l.codigo AS lote, l.validade, s.saldo, l.preco_custo,
               m.id AS medicamento_id, m.nome AS medicamento, m.tarja, m.controle_especial,
@@ -26,7 +24,6 @@ alertasRouter.get(
       [dias, hoje]
     );
 
-    // Medicamentos com saldo utilizável (sem vencidos) abaixo do mínimo, com média de vendas dos últimos 30 dias
     const estoque = await query(
       `WITH saldo AS (
          SELECT m.id, COALESCE(SUM(s.saldo) FILTER (WHERE l.validade >= $1::DATE), 0)::INTEGER AS saldo_utilizavel
@@ -55,7 +52,6 @@ alertasRouter.get(
       return { ...m, sugestao_compra: Math.max(necessidade, m.estoque_minimo - m.saldo_utilizavel) };
     });
 
-    // Valor do estoque a preço de custo e quantidade de itens
     const total = await query(
       `SELECT COALESCE(SUM(s.saldo * COALESCE(l.preco_custo, 0)), 0)::NUMERIC(12,2) AS valor,
               COALESCE(SUM(s.saldo), 0)::INTEGER AS unidades,
@@ -63,7 +59,6 @@ alertasRouter.get(
          FROM lotes l JOIN saldo_lotes s ON s.lote_id = l.id`
     );
 
-    // Vencimentos dos próximos 6 meses (valor a preço de custo), para o gráfico do painel
     const meses = await query(
       `SELECT TO_CHAR(DATE_TRUNC('month', l.validade), 'YYYY-MM') AS mes,
               SUM(s.saldo)::INTEGER AS unidades,

@@ -8,7 +8,6 @@ const VAZIO = {
   tarja: "vermelha", controle_especial: "", refrigerado: false, codigo_barras: "", preco_venda: "", estoque_minimo: 0,
 };
 
-// Formulário de cadastro e edição de medicamento
 export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
   const catalogo = useCatalogo();
   const [dados, setDados] = useState(() => {
@@ -22,7 +21,6 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
   const muda = (campo) => (e) => {
     const valor = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     const novo = { ...dados, [campo]: valor };
-    // Ao marcar controle especial, a tarja passa a exigir retenção (a preta só vale para A e B)
     if (campo === "controle_especial" && valor) {
       novo.tarja = /^[AB]/.test(valor) ? "preta" : "vermelha_retencao";
     }

@@ -1,4 +1,3 @@
-// Cria (ou recria) as tabelas a partir de schema.sql
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

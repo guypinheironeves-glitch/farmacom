@@ -12,7 +12,6 @@ const edicaoSchema = z.object({
   preco_custo: z.coerce.number().min(0).optional().nullable(),
 });
 
-// Lotes com saldo, para os campos de seleção da tela de movimentações
 lotesRouter.get(
   "/",
   wrap(async (req, res) => {
