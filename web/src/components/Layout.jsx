@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../App.jsx";
 import { Icone } from "./ui.jsx";
+import Logo from "./Logo.jsx";
 
 const MENU = [
   { para: "/", rotulo: "Painel", icone: "painel", fim: true },
@@ -13,15 +14,13 @@ const MENU = [
 export default function Layout() {
   const { usuario, sair } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
+  const iniciais = (usuario?.nome || "?").split(" ").map((p) => p[0]).slice(0, 2).join("");
 
   return (
     <div className="app">
       <aside className={`lateral ${menuAberto ? "aberta" : ""}`}>
-        <div className="marca">
-          <span className="marca-icone" aria-hidden="true">+</span>
-          <span>FarmaCom</span>
-        </div>
-        <nav>
+        <div className="lateral-marca"><Logo claro /></div>
+        <nav aria-label="Menu principal">
           {MENU.map((m) => (
             <NavLink key={m.para} to={m.para} end={m.fim} onClick={() => setMenuAberto(false)}>
               <Icone nome={m.icone} />
@@ -30,16 +29,19 @@ export default function Layout() {
           ))}
         </nav>
         <div className="usuario">
-          <div className="usuario-nome">{usuario?.nome}</div>
-          <button className="botao-link" onClick={sair}>Sair</button>
+          <span className="usuario-avatar" aria-hidden="true">{iniciais}</span>
+          <div>
+            <div className="usuario-nome">{usuario?.nome}</div>
+            <button className="botao-link" onClick={sair}>Sair</button>
+          </div>
         </div>
       </aside>
       <div className="conteudo">
         <header className="topo-movel">
-          <button className="botao-icone" aria-label="Abrir menu" onClick={() => setMenuAberto((v) => !v)}>
+          <button className="botao-icone" aria-label="Abrir menu" aria-expanded={menuAberto} onClick={() => setMenuAberto((v) => !v)}>
             <Icone nome="menu" />
           </button>
-          <span className="marca-texto">FarmaCom</span>
+          <Logo tamanho={28} claro />
         </header>
         <main>
           <Outlet />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../App.jsx";
 import { mensagemDeErro } from "../api.js";
 import { Aviso, Campo } from "../components/ui.jsx";
+import Logo from "../components/Logo.jsx";
 
 export default function Login() {
   const { entrar } = useAuth();
@@ -24,20 +25,18 @@ export default function Login() {
 
   return (
     <div className="tela-login">
-      <div className="login-lado">
-        <div className="marca marca-grande">
-          <span className="marca-icone" aria-hidden="true">+</span>
-          <span>FarmaCom</span>
-        </div>
-        <p className="login-chamada">Controle de estoque e validade para farmácias de bairro.</p>
+      <section className="login-lado">
+        <Logo tamanho={48} claro />
+        <h1 className="login-chamada">Saiba o que vence e o que acaba antes que vire prejuízo.</h1>
         <ul className="login-lista">
-          <li>Cadastro de medicamentos por lote e validade</li>
-          <li>Alertas de vencimento e de estoque baixo</li>
-          <li>Relatórios de movimentação e de perdas</li>
+          <li><span className="login-faixa faixa-vermelha" />Lotes e validades de cada medicamento, com a venda sempre pelo lote que vence primeiro</li>
+          <li><span className="login-faixa faixa-preta" />Receita obrigatória para controlados e antimicrobianos</li>
+          <li><span className="login-faixa faixa-amarela" />Alertas, sugestão de compra, curva ABC e relatório de perdas</li>
         </ul>
-      </div>
+        <p className="login-rodape">Projeto do Desafio Unifacisa, curso de Análise e Desenvolvimento de Sistemas</p>
+      </section>
       <form className="login-caixa" onSubmit={enviar}>
-        <h1>Entrar</h1>
+        <h2>Entrar no sistema</h2>
         <Campo rotulo="E-mail">
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required autoFocus />
         </Campo>
@@ -49,12 +48,15 @@ export default function Login() {
           {enviando ? "Entrando…" : "Entrar"}
         </button>
         <div className="login-demo">
-          <strong>Acesso de demonstração</strong>
-          <span>demo@farmacom.app · farmacom123</span>
-          <button type="button" className="botao-link" onClick={() => { setEmail("demo@farmacom.app"); setSenha("farmacom123"); }}>
+          <div>
+            <strong>Acesso de demonstração</strong>
+            <span>demo@farmacom.app, senha farmacom123</span>
+          </div>
+          <button type="button" className="botao botao-pequeno" onClick={() => { setEmail("demo@farmacom.app"); setSenha("farmacom123"); }}>
             Preencher
           </button>
         </div>
+        <p className="login-nota">Os dados da demonstração são de uma farmácia fictícia.</p>
       </form>
     </div>
   );

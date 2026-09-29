@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, mensagemDeErro } from "../api.js";
 import { dataBR, dataHoraBR, numero, TIPOS_MOV } from "../format.js";
-import { Aviso, Vazio } from "../components/ui.jsx";
+import { Aviso, Carregando, Icone, Vazio } from "../components/ui.jsx";
 import FormMovimentacao from "../components/FormMovimentacao.jsx";
 
 export default function Movimentacoes() {
@@ -22,11 +22,11 @@ export default function Movimentacoes() {
       <div className="cabecalho">
         <div>
           <h1>Movimentações</h1>
-          <p className="subtitulo">Entradas, vendas e baixas de estoque por lote.</p>
+          <p className="subtitulo">Entradas, vendas e baixas de estoque, sempre por lote.</p>
         </div>
       </div>
 
-      <section className="painel-bloco">
+      <section className="bloco">
         <div className="bloco-topo"><h2>Registrar movimentação</h2></div>
         <Aviso tipo="sucesso">{aviso}</Aviso>
         <FormMovimentacao
@@ -39,15 +39,16 @@ export default function Movimentacoes() {
         />
       </section>
 
-      <section className="painel-bloco">
+      <section className="bloco">
         <div className="bloco-topo"><h2>Últimas movimentações</h2></div>
         <Aviso>{erro}</Aviso>
+        {!lista && !erro && <Carregando />}
         {lista && lista.length === 0 && <Vazio>Nenhuma movimentação registrada.</Vazio>}
         {lista && lista.length > 0 && (
           <div className="tabela-rolagem">
             <table>
               <thead>
-                <tr><th>Data</th><th>Medicamento</th><th>Lote</th><th>Tipo</th><th className="num">Qtd.</th><th>Observação</th><th>Usuário</th></tr>
+                <tr><th>Data</th><th>Medicamento</th><th>Lote</th><th>Tipo</th><th className="num">Qtd.</th><th>Observação ou receita</th><th>Usuário</th></tr>
               </thead>
               <tbody>
                 {lista.map((m) => {
@@ -59,7 +60,13 @@ export default function Movimentacoes() {
                       <td>{m.lote}<div className="texto-fraco">val. {dataBR(m.validade)}</div></td>
                       <td><span className={`tipo tipo-${t.classe}`}>{t.rotulo}</span></td>
                       <td className={`num tipo-num-${t.classe}`}>{t.sinal}{numero(m.quantidade)}</td>
-                      <td>{m.observacao || "-"}</td>
+                      <td>
+                        {m.prescritor_registro ? (
+                          <span className="receita-linha" title={`Receita de ${dataBR(m.receita_data)}, ${m.prescritor_nome}`}>
+                            <Icone nome="receita" tamanho={15} /> {m.paciente_nome}, {m.prescritor_registro}
+                          </span>
+                        ) : (m.observacao || "-")}
+                      </td>
                       <td>{m.usuario || "-"}</td>
                     </tr>
                   );
