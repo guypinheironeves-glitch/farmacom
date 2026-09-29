@@ -2,21 +2,19 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../App.jsx";
 import { api, mensagemDeErro } from "../api.js";
-import { dataBR, moeda, moedaCurta, nomeMes, numero } from "../format.js";
-import { Aviso, Carregando, FaixaTarja, Icone, SeloValidade, Vazio } from "../components/ui.jsx";
-import GraficoBarras from "../components/GraficoBarras.jsx";
+import { dataBR, moeda, moedaCurta, nomeMes, numero, periodoDoDia } from "../format.js";
+import { Aviso, Carregando, Contador, FaixaTarja, Icone, SeloValidade, Vazio } from "../components/ui.jsx";
+import { MarcaIcone } from "../components/Logo.jsx";
+import { GraficoArea, GraficoBarrasHorizontais, GraficoColunas, GraficoRosca } from "../components/Graficos.jsx";
 
 const PRAZOS = [30, 60, 90];
-
-function saudacao() {
-  const h = new Date().getHours();
-  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-}
+const diaCurto = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 export default function Painel() {
   const { usuario } = useAuth();
   const [dias, setDias] = useState(30);
   const [dados, setDados] = useState(null);
+  const [graficos, setGraficos] = useState(null);
   const [erro, setErro] = useState("");
 
   useEffect(() => {
@@ -24,13 +22,18 @@ export default function Painel() {
     api(`/alertas?dias=${dias}`).then(setDados).catch((e) => setErro(mensagemDeErro(e)));
   }, [dias]);
 
+  useEffect(() => {
+    api("/painel/graficos").then(setGraficos).catch((e) => setErro(mensagemDeErro(e)));
+  }, []);
+
   const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const vendas30 = graficos?.vendas_diarias.reduce((a, d) => a + Number(d.faturamento), 0) || 0;
 
   return (
     <>
       <div className="cabecalho">
         <div>
-          <h1>{saudacao()}, {usuario?.nome?.split(" ")[0]}</h1>
+          <h1>{periodoDoDia().saudacao}, {usuario?.nome?.split(" ")[0]}</h1>
           <p className="subtitulo">Hoje é {hoje}. Veja o que precisa de atenção no estoque.</p>
         </div>
       </div>
@@ -39,37 +42,18 @@ export default function Painel() {
 
       {dados && (
         <>
-          <section className="painel-topo">
+          <section className="painel-indicadores escalonado">
             <div className="estoque-resumo">
+              <MarcaIcone tamanho={120} />
               <span className="estoque-rotulo">Valor do estoque a preço de custo</span>
-              <strong className="estoque-valor">{moeda(dados.resumo.valor_estoque)}</strong>
+              <strong className="estoque-valor"><Contador valor={Number(dados.resumo.valor_estoque)} formatar={moeda} duracao={1100} /></strong>
               <div className="estoque-detalhes">
-                <span><strong>{numero(dados.resumo.unidades_estoque)}</strong> unidades</span>
-                <span><strong>{numero(dados.resumo.medicamentos_com_estoque)}</strong> medicamentos com saldo</span>
+                <span><strong><Contador valor={dados.resumo.unidades_estoque} /></strong> unidades</span>
+                <span><strong><Contador valor={dados.resumo.medicamentos_com_estoque} /></strong> medicamentos com saldo</span>
               </div>
             </div>
-            <div className="bloco grafico-bloco">
-              <div className="bloco-topo">
-                <h2>Vencimentos nos próximos 6 meses</h2>
-                <span className="texto-fraco">valor a preço de custo</span>
-              </div>
-              <GraficoBarras
-                descricao="Valor em estoque que vence em cada um dos próximos seis meses"
-                dados={dados.vencimentos_por_mes.map((m) => ({
-                  chave: m.mes,
-                  valor: Number(m.valor),
-                  mes: m.mes,
-                  detalhe: `${m.lotes} ${m.lotes === 1 ? "lote" : "lotes"}, ${numero(m.unidades)} unidades`,
-                }))}
-                formatarValor={(v, curto) => (curto ? moedaCurta(v) : moeda(v))}
-                formatarRotulo={(d, longo) => nomeMes(d.mes, longo)}
-              />
-            </div>
-          </section>
-
-          <div className="grade-indicadores">
             <Indicador tom="perigo" icone="alerta" valor={dados.resumo.lotes_vencidos}
-              rotulo={dados.resumo.lotes_vencidos === 1 ? "lote vencido ainda no estoque" : "lotes vencidos ainda no estoque"}
+              rotulo={dados.resumo.lotes_vencidos === 1 ? "lote vencido no estoque" : "lotes vencidos no estoque"}
               detalhe="Retirar da prateleira e dar baixa" />
             <Indicador tom="alerta" icone="relogio" valor={dados.resumo.lotes_a_vencer}
               rotulo={`${dados.resumo.lotes_a_vencer === 1 ? "lote vence" : "lotes vencem"} em até ${dias} dias`}
@@ -77,7 +61,83 @@ export default function Painel() {
             <Indicador tom="padrao" icone="carrinho" valor={dados.resumo.estoque_baixo}
               rotulo={dados.resumo.estoque_baixo === 1 ? "medicamento abaixo do mínimo" : "medicamentos abaixo do mínimo"}
               detalhe="Veja a sugestão de compra abaixo" />
-          </div>
+          </section>
+
+          {graficos && (
+            <>
+              <div className="painel-graficos escalonado">
+                <section className="bloco">
+                  <div className="bloco-topo">
+                    <h2>Vendas dos últimos 30 dias</h2>
+                    <span className="texto-fraco">{moeda(vendas30)} no período</span>
+                  </div>
+                  <GraficoArea
+                    descricao="Faturamento diário com vendas nos últimos 30 dias"
+                    dados={graficos.vendas_diarias.map((d) => ({
+                      chave: d.dia,
+                      valor: Number(d.faturamento),
+                      rotulo: diaCurto(d.dia),
+                      rotuloLongo: new Date(`${d.dia}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" }),
+                      detalhe: `${numero(d.unidades)} ${d.unidades === 1 ? "unidade vendida" : "unidades vendidas"}`,
+                    }))}
+                    formatarValor={moeda}
+                    formatarEixo={moedaCurta}
+                    altura={330}
+                  />
+                </section>
+                <section className="bloco">
+                  <div className="bloco-topo">
+                    <h2>Estoque por categoria</h2>
+                    <span className="texto-fraco">a preço de custo</span>
+                  </div>
+                  <GraficoRosca
+                    descricao="Distribuição do valor em estoque por categoria"
+                    dados={graficos.estoque_por_categoria.map((c) => ({
+                      rotulo: c.categoria,
+                      valor: Number(c.valor),
+                      outros: c.categoria === "Outras categorias",
+                    }))}
+                    formatarValor={(v, curto) => (curto ? moedaCurta(v) : moeda(v))}
+                    rotuloCentro="em estoque"
+                  />
+                </section>
+              </div>
+              <div className="painel-graficos escalonado">
+                <section className="bloco">
+                  <div className="bloco-topo">
+                    <h2>Vencimentos nos próximos 6 meses</h2>
+                    <span className="texto-fraco">valor a preço de custo</span>
+                  </div>
+                  <GraficoColunas
+                    descricao="Valor em estoque que vence em cada um dos próximos seis meses"
+                    dados={dados.vencimentos_por_mes.map((m) => ({
+                      chave: m.mes,
+                      valor: Number(m.valor),
+                      rotulo: nomeMes(m.mes),
+                      rotuloLongo: nomeMes(m.mes, true),
+                      detalhe: `${m.lotes} ${m.lotes === 1 ? "lote" : "lotes"}, ${numero(m.unidades)} unidades`,
+                    }))}
+                    formatarValor={(v, curto) => (curto ? moedaCurta(v) : moeda(v))}
+                    altura={300}
+                  />
+                </section>
+                <section className="bloco">
+                  <div className="bloco-topo">
+                    <h2>Mais vendidos</h2>
+                    <span className="texto-fraco">unidades em 30 dias</span>
+                  </div>
+                  {graficos.mais_vendidos.length === 0 ? (
+                    <Vazio>Nenhuma venda nos últimos 30 dias.</Vazio>
+                  ) : (
+                    <GraficoBarrasHorizontais
+                      dados={graficos.mais_vendidos.map((m) => ({ chave: m.id, rotulo: m.nome, valor: m.unidades, link: `/medicamentos/${m.id}` }))}
+                      formatarValor={numero}
+                    />
+                  )}
+                </section>
+              </div>
+            </>
+          )}
 
           <section className="bloco">
             <div className="bloco-topo">
@@ -158,8 +218,9 @@ function Indicador({ tom, icone, valor, rotulo, detalhe }) {
   return (
     <div className={`indicador tom-${tom}`}>
       <div className="indicador-icone"><Icone nome={icone} /></div>
-      <div className="indicador-corpo">
-        <div className="indicador-linha"><span className="indicador-valor">{numero(valor)}</span> <span className="indicador-rotulo">{rotulo}</span></div>
+      <span className="indicador-valor"><Contador valor={valor} /></span>
+      <div>
+        <div className="indicador-rotulo">{rotulo}</div>
         <div className="indicador-detalhe">{detalhe}</div>
       </div>
     </div>

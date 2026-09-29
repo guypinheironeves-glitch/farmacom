@@ -5,7 +5,7 @@ import { Aviso, Campo, Modal } from "./ui.jsx";
 
 const VAZIO = {
   nome: "", principio_ativo: "", fabricante: "", apresentacao: "", categoria: "", tipo: "generico",
-  tarja: "vermelha", controle_especial: "", refrigerado: false, codigo_barras: "", preco_venda: "", estoque_minimo: 0,
+  tarja: "vermelha", controle_especial: "", refrigerado: false, codigo_barras: "", registro_anvisa: "", preco_venda: "", estoque_minimo: 0,
 };
 
 export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
@@ -38,6 +38,7 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
         categoria: dados.categoria || null,
         controle_especial: dados.controle_especial || null,
         codigo_barras: dados.codigo_barras || null,
+        registro_anvisa: dados.registro_anvisa || null,
         preco_venda: dados.preco_venda === "" || dados.preco_venda === null ? null : Number(dados.preco_venda),
         estoque_minimo: Number(dados.estoque_minimo) || 0,
       };
@@ -72,7 +73,10 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
             <Campo rotulo="Código de barras (EAN-13)">
               <input value={dados.codigo_barras || ""} onChange={muda("codigo_barras")} inputMode="numeric" maxLength={13} pattern="\d{13}" title="13 dígitos" />
             </Campo>
-            <Campo rotulo="Categoria" largura={2}>
+            <Campo rotulo="Registro na Anvisa" dica="Número do registro impresso na embalagem. Usado no SNGPC e na leitura da nota fiscal.">
+              <input value={dados.registro_anvisa || ""} onChange={muda("registro_anvisa")} inputMode="numeric" maxLength={13} />
+            </Campo>
+            <Campo rotulo="Categoria">
               <select value={dados.categoria || ""} onChange={muda("categoria")}>
                 <option value="">Selecione…</option>
                 {catalogo?.categorias.map((c) => <option key={c}>{c}</option>)}
@@ -121,7 +125,7 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
         <Aviso>{erro}</Aviso>
         <div className="form-acoes">
           <button type="button" className="botao" onClick={aoFechar}>Cancelar</button>
-          <button className="botao botao-primario" disabled={salvando}>{salvando ? "Salvando…" : inicial ? "Salvar alterações" : "Cadastrar"}</button>
+          <button className="botao botao-primario sem-giro" disabled={salvando}>{salvando ? "Salvando…" : inicial ? "Salvar alterações" : "Cadastrar"}</button>
         </div>
       </form>
     </Modal>

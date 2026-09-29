@@ -105,7 +105,7 @@ export default function FormMovimentacao({ lote, aoSalvar, aoCancelar }) {
       <div className="form-grade">
         <Campo rotulo="Tipo *">
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            {Object.entries(TIPOS_MOV).map(([valor, t]) => (
+            {Object.entries(TIPOS_MOV).filter(([, t]) => !t.automatico).map(([valor, t]) => (
               <option key={valor} value={valor} disabled={vencido && valor === "saida"}>{t.rotulo}</option>
             ))}
           </select>
