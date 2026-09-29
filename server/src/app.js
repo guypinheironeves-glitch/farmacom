@@ -8,6 +8,7 @@ import { movimentacoesRouter } from "./routes/movimentacoes.js";
 import { alertasRouter } from "./routes/alertas.js";
 import { relatoriosRouter } from "./routes/relatorios.js";
 import { HttpError } from "./http-error.js";
+import { catalogo } from "./catalogo.js";
 
 export function createApp() {
   const app = express();
@@ -19,6 +20,7 @@ export function createApp() {
   app.get("/api/saude", (_req, res) => res.json({ status: "ok" }));
 
   app.use("/api/auth", authRouter);
+  app.get("/api/catalogo", requireAuth, (_req, res) => res.json(catalogo));
   app.use("/api/medicamentos", requireAuth, medicamentosRouter);
   app.use("/api/lotes", requireAuth, lotesRouter);
   app.use("/api/movimentacoes", requireAuth, movimentacoesRouter);

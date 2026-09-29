@@ -18,7 +18,7 @@ lotesRouter.get(
   wrap(async (req, res) => {
     const medicamentoId = req.query.medicamento_id ? parseId(req.query.medicamento_id) : null;
     const { rows } = await query(
-      `SELECT l.*, s.saldo, m.nome AS medicamento, (l.validade - $2::DATE) AS dias_para_vencer
+      `SELECT l.*, s.saldo, m.nome AS medicamento, m.controle_especial, m.tarja, (l.validade - $2::DATE) AS dias_para_vencer
          FROM lotes l
          JOIN saldo_lotes s ON s.lote_id = l.id
          JOIN medicamentos m ON m.id = l.medicamento_id

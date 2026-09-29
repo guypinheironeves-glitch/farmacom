@@ -78,3 +78,69 @@ relatoriosRouter.get(
     });
   })
 );
+
+// Curva ABC: classifica os medicamentos pelo faturamento das vendas no período
+// A = até 80% do faturamento acumulado, B = de 80% a 95%, C = o restante
+relatoriosRouter.get(
+  "/curva-abc",
+  wrap(async (req, res) => {
+    const { inicio, fim } = periodo(req);
+    const { rows } = await query(
+      `SELECT m.id AS medicamento_id, m.nome AS medicamento, m.categoria,
+              SUM(mv.quantidade)::INTEGER AS quantidade,
+              ROUND(SUM(mv.quantidade * COALESCE(m.preco_venda, 0)), 2) AS faturamento
+         FROM movimentacoes mv
+         JOIN lotes l ON l.id = mv.lote_id
+         JOIN medicamentos m ON m.id = l.medicamento_id
+        WHERE mv.tipo = 'saida' AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
+        GROUP BY m.id, m.nome, m.categoria
+        ORDER BY faturamento DESC, quantidade DESC, m.nome`,
+      [inicio, fim, TIMEZONE]
+    );
+    const total = rows.reduce((a, r) => a + Number(r.faturamento), 0);
+    let acumulado = 0;
+    const itens = rows.map((r) => {
+      const antes = acumulado;
+      acumulado += Number(r.faturamento);
+      const percentual = total ? (Number(r.faturamento) / total) * 100 : 0;
+      // A classe é decidida pelo acumulado antes do item: o item que cruza os 80% ainda é A
+      const classe = total === 0 ? "C" : antes / total < 0.8 ? "A" : antes / total < 0.95 ? "B" : "C";
+      return {
+        ...r,
+        percentual: Number(percentual.toFixed(2)),
+        acumulado: Number((total ? (acumulado / total) * 100 : 0).toFixed(2)),
+        classe,
+      };
+    });
+    const resumo = ["A", "B", "C"].map((c) => {
+      const grupo = itens.filter((i) => i.classe === c);
+      return {
+        classe: c,
+        itens: grupo.length,
+        faturamento: Number(grupo.reduce((a, i) => a + Number(i.faturamento), 0).toFixed(2)),
+      };
+    });
+    res.json({ inicio, fim, total: Number(total.toFixed(2)), resumo, itens });
+  })
+);
+
+// Livro de medicamentos com controle especial: saídas com os dados da receita (base para o SNGPC)
+relatoriosRouter.get(
+  "/controlados",
+  wrap(async (req, res) => {
+    const { inicio, fim } = periodo(req);
+    const { rows } = await query(
+      `SELECT mv.id, mv.criado_em, mv.quantidade, mv.receita_numero, mv.receita_data,
+              mv.prescritor_nome, mv.prescritor_registro, mv.paciente_nome,
+              m.id AS medicamento_id, m.nome AS medicamento, m.controle_especial, l.codigo AS lote
+         FROM movimentacoes mv
+         JOIN lotes l ON l.id = mv.lote_id
+         JOIN medicamentos m ON m.id = l.medicamento_id
+        WHERE mv.tipo = 'saida' AND m.controle_especial IS NOT NULL
+          AND (mv.criado_em AT TIME ZONE $3)::DATE BETWEEN $1 AND $2
+        ORDER BY mv.criado_em DESC`,
+      [inicio, fim, TIMEZONE]
+    );
+    res.json({ inicio, fim, total_unidades: rows.reduce((a, r) => a + r.quantidade, 0), itens: rows });
+  })
+);
