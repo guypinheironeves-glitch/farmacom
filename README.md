@@ -6,18 +6,25 @@ Projeto do **Desafio Unifacisa**, curso de Análise e Desenvolvimento de Sistema
 
 ![Painel do FarmaCom](docs/telas/painel.png)
 
-## Funcionalidades do MVP
+## Funcionalidades
 
-- **Cadastro de medicamentos e lotes**: nome, princípio ativo, fabricante, apresentação, estoque mínimo; cada lote com código, validade, fornecedor e custo unitário.
-- **Entradas e saídas**: registro de entradas, vendas e baixas (por vencimento ou avaria), com saldo por lote e por medicamento.
-- **Alertas de validade e de estoque**: painel com lotes vencidos e a vencer em 30, 60 ou 90 dias, medicamentos abaixo do mínimo e valor em risco.
-- **Relatórios**: perdas por vencimento e avaria (em quantidade e em reais) e movimentação por medicamento, com exportação para planilha.
-- **Regras de negócio protegidas no servidor**: não é possível vender mais que o saldo nem vender lote vencido (só dar baixa).
+- **Catálogo com dados regulatórios**: 77 medicamentos comuns no Brasil na demonstração, com categoria, tipo (referência, genérico, similar), tarja, lista de controle especial (Portaria 344/98 e antimicrobianos), código de barras EAN-13, preço e indicação de armazenamento refrigerado.
+- **Lotes e validade**: cada lote tem validade, fornecedor, custo e saldo próprios.
+- **Venda pelo lote que vence primeiro (FEFO)**: o sistema sugere o lote e avisa quando outro é escolhido. Lote vencido não pode ser vendido, só baixado.
+- **Receita retida para controlados e antimicrobianos**: a saída exige data da receita, prescritor, registro profissional e paciente; lista B1 exige o número da notificação; receita de antimicrobiano vale 10 dias.
+- **Painel**: valor do estoque, vencimentos dos próximos 6 meses em gráfico, lotes vencidos e a vencer (30, 60 ou 90 dias) e sugestão de compra.
+- **Relatórios**: perdas por vencimento e avaria, movimentação, curva ABC e livro de controlados (base para o SNGPC), todos com exportação para planilha.
 - **Login** com usuário e senha.
 
-| Medicamento e lotes | Relatórios |
+As escolhas foram baseadas em uma pesquisa sobre sistemas de farmácia do mercado e sobre a regulação brasileira: veja [docs/pesquisa.md](docs/pesquisa.md).
+
+| Medicamentos | Medicamento de tarja preta |
 |---|---|
-| ![Detalhe do medicamento](docs/telas/medicamento.png) | ![Relatórios](docs/telas/relatorios.png) |
+| ![Lista de medicamentos](docs/telas/medicamentos.png) | ![Detalhe do medicamento](docs/telas/medicamento.png) |
+
+| Receita retida na venda | Curva ABC |
+|---|---|
+| ![Venda de controlado](docs/telas/receita.png) | ![Relatórios](docs/telas/relatorios.png) |
 
 ## Tecnologias
 
@@ -76,7 +83,7 @@ cd server
 npm test
 ```
 
-Os testes usam o banco `farmacom_test` e cobrem login, validação de campos, cálculo de saldo, valores limite (saída igual ou maior que o saldo, alerta no último dia do prazo), bloqueio de venda de lote vencido e cálculo de perdas. Para rodá-los automaticamente no GitHub a cada envio de código, ative a integração contínua: no site do GitHub, crie o arquivo `.github/workflows/ci.yml` com o conteúdo de [`docs/ci.yml`](docs/ci.yml).
+Os testes usam o banco `farmacom_test` e cobrem login, validação de campos e do código de barras, cálculo de saldo, valores limite (saída igual ou maior que o saldo, alerta no último dia do prazo, receita de antimicrobiano com 10 e 11 dias), bloqueio de venda de lote vencido, receita obrigatória para controlados, sugestão de lote por validade, curva ABC e cálculo de perdas. Para rodá-los automaticamente no GitHub a cada envio de código, ative a integração contínua: no site do GitHub, crie o arquivo `.github/workflows/ci.yml` com o conteúdo de [`docs/ci.yml`](docs/ci.yml).
 
 ## Estrutura
 
@@ -107,19 +114,22 @@ Todas, exceto login e saúde, exigem o cabeçalho `Authorization: Bearer <token>
 |---|---|---|
 | POST | `/api/auth/login` | Login; devolve o token |
 | GET | `/api/auth/eu` | Usuário logado |
-| GET | `/api/medicamentos?busca=` | Lista com saldo e próxima validade |
+| GET | `/api/catalogo` | Categorias, tipos, tarjas e listas de controle |
+| GET | `/api/medicamentos?busca=&categoria=&tarja=&controlado=&situacao=` | Lista com saldo, próxima validade e filtros |
 | POST | `/api/medicamentos` | Cadastra medicamento |
-| GET | `/api/medicamentos/:id` | Detalhe com lotes e saldos |
+| GET | `/api/medicamentos/:id` | Detalhe com lotes, saldos e lote sugerido para venda |
 | PUT | `/api/medicamentos/:id` | Edita medicamento |
 | DELETE | `/api/medicamentos/:id` | Exclui (só sem saídas ou baixas) |
 | POST | `/api/medicamentos/:id/lotes` | Cadastra lote e entrada inicial |
 | GET | `/api/lotes?medicamento_id=` | Lotes com saldo |
 | PUT | `/api/lotes/:id` | Edita lote |
-| GET | `/api/movimentacoes?limite=` | Últimas movimentações |
-| POST | `/api/movimentacoes` | Registra entrada, saída ou baixa |
-| GET | `/api/alertas?dias=` | Alertas de validade e de estoque baixo |
+| GET | `/api/movimentacoes?limite=&tipo=` | Últimas movimentações |
+| POST | `/api/movimentacoes` | Registra entrada, saída ou baixa (com receita para controlados) |
+| GET | `/api/alertas?dias=` | Painel: validade, sugestão de compra e vencimentos por mês |
 | GET | `/api/relatorios/perdas?inicio=&fim=` | Perdas no período |
 | GET | `/api/relatorios/movimentacao?inicio=&fim=` | Movimentação no período |
+| GET | `/api/relatorios/curva-abc?inicio=&fim=` | Curva ABC por faturamento |
+| GET | `/api/relatorios/controlados?inicio=&fim=` | Livro de controlados |
 | GET | `/api/saude` | Verificação de funcionamento |
 
 ## Publicação na internet
