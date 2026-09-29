@@ -51,7 +51,7 @@ export async function api(caminho, { method = "GET", body } = {}) {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, { erro: "Sem conexão com o servidor. Verifique se a API está rodando." });
+    throw new ApiError(0, { erro: "Sem resposta do servidor. Se ele estava parado, pode levar até 1 minuto para iniciar. Tente de novo." });
   }
 
   if (res.status === 204) return null;
