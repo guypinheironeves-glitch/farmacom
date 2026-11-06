@@ -130,7 +130,7 @@ export default function MedicamentoDetalhe() {
                     <td className="num">{numero(l.saldo)}</td>
                     <td className="num acoes-lote">
                       <button className="botao botao-pequeno" onClick={() => setLoteEditado(l)}>Editar</button>
-                      <button className="botao botao-pequeno" onClick={() => setContando(l)} title="Conferir a quantidade física do lote">Contar</button>
+                      {admin && <button className="botao botao-pequeno" onClick={() => setContando(l)} title="Conferir a quantidade física do lote">Contar</button>}
                       <button className="botao botao-pequeno" onClick={() => setMovLote({ ...l, medicamento_id: med.id, controle_especial: med.controle_especial })}>
                         Movimentar
                       </button>
@@ -196,6 +196,8 @@ export default function MedicamentoDetalhe() {
 }
 
 function FormLote({ medicamentoId, lote, aoFechar, aoSalvar }) {
+  const { admin } = useAuth();
+  const travarValidade = Boolean(lote) && !admin;
   const [fornecedores, setFornecedores] = useState([]);
   const [dados, setDados] = useState(
     lote
@@ -239,8 +241,8 @@ function FormLote({ medicamentoId, lote, aoFechar, aoSalvar }) {
       <form onSubmit={enviar} className="form">
         <div className="form-grade">
           <Campo rotulo="Código do lote *"><input value={dados.codigo} onChange={muda("codigo")} required autoFocus /></Campo>
-          <Campo rotulo="Validade *">
-            <input type="date" value={dados.validade} onChange={muda("validade")} required />
+          <Campo rotulo="Validade *" dica={travarValidade ? "Só o administrador corrige a validade." : undefined}>
+            <input type="date" value={dados.validade} onChange={muda("validade")} required disabled={travarValidade} />
           </Campo>
         </div>
         {dados.validade && dados.validade < hojeISO() && (

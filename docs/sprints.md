@@ -19,7 +19,9 @@ Toda alteração passa por revisão antes de ir para a `main`. Os três integran
 
 ## Próximos passos
 
-- Cadastro de usuários e perfis (proprietário e balconista)
-- Entrada de lotes pela nota fiscal de compra (XML da NF-e)
-- Geração do arquivo para o SNGPC
-- Exportação de relatórios em PDF
+Já entregues: perfis de administrador e atendente, entrada pela NF-e, arquivo do SNGPC, relatórios em PDF e inventário.
+
+- Testes de usabilidade com a farmácia do piloto
+- Integração com o PDV e emissão de NFC-e
+- Tabela de preços (PMC) e convênios (PBM)
+- Validação do arquivo do SNGPC no ambiente de testes da Anvisa

@@ -45,7 +45,7 @@ export function createApp() {
 
   app.use((_req, res) => res.status(404).json({ erro: "Rota não encontrada." }));
 
-  // eslint-disable-next-line no-unused-vars
+  // O Express só trata como middleware de erro a função com 4 parâmetros
   app.use((err, _req, res, _next) => {
     if (err instanceof ZodError) {
       return res.status(400).json({

@@ -147,6 +147,14 @@ medicamentosRouter.put(
   wrap(async (req, res) => {
     const id = parseId(req.params.id);
     const d = medicamentoSchema.parse(req.body);
+    if (req.usuario.perfil !== "administrador") {
+      const atual = await query("SELECT tarja, controle_especial FROM medicamentos WHERE id = $1", [id]);
+      if (!atual.rows[0]) throw new HttpError(404, "Medicamento não encontrado.");
+      const { tarja, controle_especial } = atual.rows[0];
+      if (tarja !== d.tarja || (controle_especial ?? null) !== (d.controle_especial ?? null)) {
+        throw new HttpError(403, "Só o administrador altera a tarja e o controle especial.");
+      }
+    }
     const { rows } = await query(
       `UPDATE medicamentos SET ${CAMPOS.map((c, i) => `${c} = $${i + 1}`).join(", ")}
         WHERE id = $${CAMPOS.length + 1} RETURNING *`,

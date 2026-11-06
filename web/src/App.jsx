@@ -29,10 +29,12 @@ export default function App() {
     setUsuario(null);
   }, []);
 
+  const { setCor } = tema;
+
   useEffect(() => {
     api("/aparencia")
       .then((a) => {
-        if (a.cor_destaque) tema.setCor(a.cor_destaque);
+        if (a.cor_destaque) setCor(a.cor_destaque);
         setNomeFarmacia(a.nome_farmacia || "");
       })
       .catch(() => {});
@@ -42,17 +44,17 @@ export default function App() {
       .then(setUsuario)
       .catch(sair)
       .finally(() => setCarregando(false));
-  }, [sair]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sair, setCor]);
 
-  const entrar = async (email, senha) => {
+  const entrar = useCallback(async (email, senha) => {
     const { token, usuario } = await api("/auth/login", { method: "POST", body: { email, senha } });
     sessao.salvar(token);
     setUsuario(usuario);
-  };
+  }, []);
 
   const valorAuth = useMemo(
     () => ({ usuario, entrar, sair, admin: usuario?.perfil === "administrador", nomeFarmacia, setNomeFarmacia }),
-    [usuario, sair, nomeFarmacia] // eslint-disable-line react-hooks/exhaustive-deps
+    [usuario, entrar, sair, nomeFarmacia]
   );
 
   return (

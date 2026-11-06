@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MarcaIcone } from "./Logo.jsx";
-import { numero, situacaoValidade } from "../format.js";
+import { situacaoValidade } from "../format.js";
 import { ROTULO_TARJA_CURTO, ROTULO_TIPO, rotuloControle } from "../catalogo.js";
 
 const CAMINHOS = {
@@ -26,8 +26,6 @@ const CAMINHOS = {
   engrenagem: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.47.47 0 00-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.47.47 0 00.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 00-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 110-7.2 3.6 3.6 0 010 7.2z",
   sol: "M12 7a5 5 0 100 10 5 5 0 000-10zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM1 11h3v2H1v-2zm19 0h3v2h-3v-2zM4.22 5.64l1.42-1.42 2.12 2.12-1.42 1.42-2.12-2.12zm12.02 12.02l1.42-1.42 2.12 2.12-1.42 1.42-2.12-2.12zM18.36 4.22l1.42 1.42-2.12 2.12-1.42-1.42 2.12-2.12zM6.34 16.24l1.42 1.42-2.12 2.12-1.42-1.42 2.12-2.12z",
   lua: "M12.3 22A10 10 0 0110.4 2.2a8 8 0 0011.4 11.4A10 10 0 0112.3 22z",
-  estrela: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
-  amanhecer: "M3 18h18v2H3v-2zm9-9a6 6 0 016 6H6a6 6 0 016-6zm-1-6h2v3h-2V3zM4.22 6.64l1.42-1.42 2.12 2.12-1.42 1.42-2.12-2.12zm12.02.7l2.12-2.12 1.42 1.42-2.12 2.12-1.42-1.42z",
   sair: "M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z",
   confirmar: "M12 2a10 10 0 100 20 10 10 0 000-20zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
   upload: "M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z",
@@ -46,7 +44,6 @@ const CAMINHOS = {
   mensagem: "M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z",
   email: "M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z",
   escudo: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z",
-  local: "M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z",
   busca: "M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0a4.5 4.5 0 110-9 4.5 4.5 0 010 9z",
 };
 
@@ -148,33 +145,6 @@ export function Interruptor({ ligado, aoMudar, rotulo, desativado }) {
       {rotulo && <span>{rotulo}</span>}
     </label>
   );
-}
-
-const semMovimento = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-export function Contador({ valor, formatar = numero, duracao = 900 }) {
-  const alvo = Number(valor) || 0;
-  const [atual, setAtual] = useState(semMovimento() ? alvo : 0);
-
-  useEffect(() => {
-    if (semMovimento()) {
-      setAtual(alvo);
-      return undefined;
-    }
-    let inicio;
-    let quadro;
-    const de = 0;
-    const passo = (t) => {
-      inicio ??= t;
-      const p = Math.min((t - inicio) / duracao, 1);
-      setAtual(de + (alvo - de) * (1 - (1 - p) ** 3));
-      if (p < 1) quadro = requestAnimationFrame(passo);
-    };
-    quadro = requestAnimationFrame(passo);
-    return () => cancelAnimationFrame(quadro);
-  }, [alvo, duracao]);
-
-  return <>{formatar(Number.isInteger(alvo) ? Math.round(atual) : atual)}</>;
 }
 
 export function Carregando({ linhas = 4 }) {

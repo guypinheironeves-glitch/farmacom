@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../App.jsx";
 import { api, mensagemDeErro } from "../api.js";
-import { dataBR, moeda, moedaCurta, nomeMes, numero, periodoDoDia } from "../format.js";
-import { Aviso, Carregando, Contador, FaixaTarja, Icone, SeloValidade, Vazio } from "../components/ui.jsx";
-import { MarcaIcone } from "../components/Logo.jsx";
+import { dataBR, moeda, moedaCurta, nomeMes, numero, saudacao } from "../format.js";
+import { Aviso, Carregando, FaixaTarja, Icone, SeloValidade, Vazio } from "../components/ui.jsx";
 import { GraficoArea, GraficoBarrasHorizontais, GraficoColunas, GraficoRosca } from "../components/Graficos.jsx";
 
 const PRAZOS = [30, 60, 90];
@@ -27,13 +26,16 @@ export default function Painel() {
   }, []);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-  const vendas30 = graficos?.vendas_diarias.reduce((a, d) => a + Number(d.faturamento), 0) || 0;
+  // O dia de hoje ainda está em andamento: fica fora da linha para não parecer uma queda
+  const diasFechados = graficos?.vendas_diarias.slice(0, -1) || [];
+  const vendasHoje = graficos?.vendas_diarias.at(-1);
+  const vendas30 = diasFechados.reduce((a, d) => a + Number(d.faturamento), 0);
 
   return (
     <>
       <div className="cabecalho">
         <div>
-          <h1>{periodoDoDia().saudacao}, {usuario?.nome?.split(" ")[0]}</h1>
+          <h1>{saudacao()}, {usuario?.nome?.split(" ")[0]}</h1>
           <p className="subtitulo">Hoje é {hoje}. Veja o que precisa de atenção no estoque.</p>
         </div>
       </div>
@@ -42,14 +44,13 @@ export default function Painel() {
 
       {dados && (
         <>
-          <section className="painel-indicadores escalonado">
+          <section className="painel-indicadores">
             <div className="estoque-resumo">
-              <MarcaIcone tamanho={120} />
               <span className="estoque-rotulo">Valor do estoque a preço de custo</span>
-              <strong className="estoque-valor"><Contador valor={Number(dados.resumo.valor_estoque)} formatar={moeda} duracao={1100} /></strong>
+              <strong className="estoque-valor">{moeda(dados.resumo.valor_estoque)}</strong>
               <div className="estoque-detalhes">
-                <span><strong><Contador valor={dados.resumo.unidades_estoque} /></strong> unidades</span>
-                <span><strong><Contador valor={dados.resumo.medicamentos_com_estoque} /></strong> medicamentos com saldo</span>
+                <span><strong>{numero(dados.resumo.unidades_estoque)}</strong> unidades</span>
+                <span><strong>{numero(dados.resumo.medicamentos_com_estoque)}</strong> medicamentos com saldo</span>
               </div>
             </div>
             <Indicador tom="perigo" icone="alerta" valor={dados.resumo.lotes_vencidos}
@@ -65,15 +66,18 @@ export default function Painel() {
 
           {graficos && (
             <>
-              <div className="painel-graficos escalonado">
+              <div className="painel-graficos">
                 <section className="bloco">
                   <div className="bloco-topo">
                     <h2>Vendas dos últimos 30 dias</h2>
-                    <span className="texto-fraco">{moeda(vendas30)} no período</span>
+                    <span className="texto-fraco">
+                      {moeda(vendas30)} no período
+                      {Number(vendasHoje?.faturamento) > 0 && ` · hoje, até agora: ${moeda(vendasHoje.faturamento)}`}
+                    </span>
                   </div>
                   <GraficoArea
                     descricao="Faturamento diário com vendas nos últimos 30 dias"
-                    dados={graficos.vendas_diarias.map((d) => ({
+                    dados={diasFechados.map((d) => ({
                       chave: d.dia,
                       valor: Number(d.faturamento),
                       rotulo: diaCurto(d.dia),
@@ -102,7 +106,7 @@ export default function Painel() {
                   />
                 </section>
               </div>
-              <div className="painel-graficos escalonado">
+              <div className="painel-graficos">
                 <section className="bloco">
                   <div className="bloco-topo">
                     <h2>Vencimentos nos próximos 6 meses</h2>
@@ -218,7 +222,7 @@ function Indicador({ tom, icone, valor, rotulo, detalhe }) {
   return (
     <div className={`indicador tom-${tom}`}>
       <div className="indicador-icone"><Icone nome={icone} /></div>
-      <span className="indicador-valor"><Contador valor={valor} /></span>
+      <span className="indicador-valor">{numero(valor)}</span>
       <div>
         <div className="indicador-rotulo">{rotulo}</div>
         <div className="indicador-detalhe">{detalhe}</div>

@@ -22,7 +22,8 @@ function useLargura(padrao) {
 
 function escalaBonita(max) {
   if (max <= 0) return 1;
-  const potencia = 10 ** Math.floor(Math.log10(max));
+  // Quatro faixas no eixo, com o menor passo "redondo" que ainda cobre o máximo
+  const potencia = 10 ** Math.floor(Math.log10(max / 4));
   const passo = [1, 2, 2.5, 5, 10].find((p) => p * potencia * 4 >= max) * potencia;
   return passo * 4;
 }
@@ -124,7 +125,7 @@ export function GraficoArea({ dados, formatarValor, formatarEixo = formatarValor
           ) : null
         )}
         <path d={area} className="grafico-area" />
-        <path d={linha} className="grafico-linha" pathLength={1} />
+        <path d={linha} className="grafico-linha" />
         {ativo !== null && (
           <g>
             <line x1={x(ativo)} x2={x(ativo)} y1={m.topo} y2={m.topo + h} className="grafico-mira" />
@@ -179,7 +180,7 @@ export function GraficoRosca({ dados, formatarValor, rotuloCentro, descricao }) 
               strokeDasharray={`${f.traco} ${c - f.traco}`}
               strokeDashoffset={f.deslocamento}
               className={`rosca-fatia ${ativo === i ? "ativa" : ativo !== null ? "apagada" : ""}`}
-              style={{ "--c": c, animationDelay: `${i * 90}ms` }}
+              style={{ "--c": c }}
               onMouseEnter={() => setAtivo(i)}
               onMouseLeave={() => setAtivo(null)}
             />
@@ -268,7 +269,7 @@ export function GraficoCurvaABC({ itens, descricao }) {
         {[["start", 0], ["middle", 0.5], ["end", 1]].map(([ancora, f]) => (
           <text key={f} x={m.esquerda + f * w} y={altura - 8} textAnchor={ancora} className="grafico-rotulo">{largura < 480 && f === 0.5 ? "" : `${Math.round(f * 100)}% dos itens`}</text>
         ))}
-        <path d={linha} className="grafico-linha" pathLength={1} clipPath={`url(#${id}-area)`} />
+        <path d={linha} className="grafico-linha" clipPath={`url(#${id}-area)`} />
         {ativo !== null && (
           <g>
             <line x1={pontos[ativo + 1].x} x2={pontos[ativo + 1].x} y1={m.topo} y2={m.topo + h} className="grafico-mira" />

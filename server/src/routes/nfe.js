@@ -15,7 +15,7 @@ nfeRouter.post(
     const nfe = lerNfe(xml);
 
     const jaImportada = nfe.nota.chave
-      ? (await query("SELECT COUNT(*)::INTEGER AS n FROM lotes WHERE nota_fiscal = $1", [nfe.nota.chave])).rows[0].n > 0
+      ? (await query("SELECT 1 FROM notas_importadas WHERE chave = $1", [nfe.nota.chave])).rowCount > 0
       : false;
     const fornecedor = nfe.fornecedor.cnpj
       ? (await query("SELECT id, nome FROM fornecedores WHERE cnpj = $1", [nfe.fornecedor.cnpj])).rows[0]
@@ -81,8 +81,8 @@ nfeRouter.post(
     const d = importarSchema.parse(req.body);
     const resultado = await transaction(async (db) => {
       if (d.nota.chave) {
-        const dup = await db.query("SELECT COUNT(*)::INTEGER AS n FROM lotes WHERE nota_fiscal = $1", [d.nota.chave]);
-        if (dup.rows[0].n > 0) throw new HttpError(409, "Esta nota já foi importada.");
+        const dup = await db.query("SELECT 1 FROM notas_importadas WHERE chave = $1 FOR UPDATE", [d.nota.chave]);
+        if (dup.rowCount) throw new HttpError(409, "Esta nota já foi importada.");
       }
       let fornecedorId = null;
       if (d.fornecedor.cnpj) {
@@ -118,6 +118,13 @@ nfeRouter.post(
           );
           unidades += l.quantidade;
         }
+      }
+      if (d.nota.chave) {
+        // A chave primária barra duas importações simultâneas da mesma nota
+        await db.query(
+          "INSERT INTO notas_importadas (chave, numero, fornecedor_id, usuario_id) VALUES ($1, $2, $3, $4)",
+          [d.nota.chave, d.nota.numero || null, fornecedorId, req.usuario.id]
+        );
       }
       return { fornecedor_id: fornecedorId, lotes_criados: lotesCriados, unidades };
     });

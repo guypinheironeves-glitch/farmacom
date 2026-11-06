@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query } from "../db.js";
 import { HttpError, parseId, wrap } from "../http-error.js";
 import { cnpjValido, digitos } from "../validacao.js";
+import { somenteAdministrador } from "../auth.js";
 
 export const fornecedoresRouter = Router();
 
@@ -61,6 +62,7 @@ fornecedoresRouter.put(
 
 fornecedoresRouter.delete(
   "/:id",
+  somenteAdministrador,
   wrap(async (req, res) => {
     const id = parseId(req.params.id);
     const uso = await query("SELECT COUNT(*)::INTEGER AS n FROM lotes WHERE fornecedor_id = $1", [id]);

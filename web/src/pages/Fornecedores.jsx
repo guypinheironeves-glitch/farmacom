@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../App.jsx";
 import { api, mensagemDeErro } from "../api.js";
 import { cnpjFormatado, dataLocal, numero, telefoneFormatado } from "../format.js";
 import { Aviso, Campo, Carregando, Icone, Modal, Vazio } from "../components/ui.jsx";
@@ -8,6 +9,7 @@ const VAZIO = { nome: "", cnpj: "", telefone: "", email: "", contato: "" };
 
 export default function Fornecedores() {
   const avisar = useAvisar();
+  const { admin } = useAuth();
   const [lista, setLista] = useState(null);
   const [busca, setBusca] = useState("");
   const [erro, setErro] = useState("");
@@ -79,9 +81,17 @@ export default function Fornecedores() {
                     <td>{dataLocal(f.ultima_entrega)}</td>
                     <td className="acoes-linha">
                       <button className="botao-icone" onClick={() => setEditado(f)} aria-label={`Editar ${f.nome}`} title="Editar"><Icone nome="lapis" tamanho={18} /></button>
-                      <button className="botao-icone" onClick={() => setExcluindo(f)} aria-label={`Excluir ${f.nome}`} title="Excluir" disabled={f.total_lotes > 0}>
-                        <Icone nome="lixeira" tamanho={18} />
-                      </button>
+                      {admin && (
+                        <button
+                          className="botao-icone"
+                          onClick={() => setExcluindo(f)}
+                          aria-label={`Excluir ${f.nome}`}
+                          title={f.total_lotes > 0 ? "Tem lotes cadastrados" : "Excluir"}
+                          disabled={f.total_lotes > 0}
+                        >
+                          <Icone nome="lixeira" tamanho={18} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

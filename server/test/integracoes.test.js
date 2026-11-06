@@ -110,6 +110,43 @@ test("NF-e: reconhece itens pelo código de barras e importa lotes uma única ve
   assert.equal(repetida.status, 409);
 });
 
+test("NF-e: nota com lotes que já existiam também não entra duas vezes", async () => {
+  const med = await request(app).post("/api/medicamentos").set(como(admin)).send({ nome: "Lote repetido 5 mg" });
+  await request(app).post(`/api/medicamentos/${med.body.id}/lotes`).set(como(admin))
+    .send({ codigo: "R1", validade: hojeISO(200), quantidade_inicial: 5 });
+  const corpo = {
+    nota: { chave: "25261011222333000181550010000099991000099990", numero: "9999" },
+    fornecedor: { cnpj: "", nome: "Distribuidora Teste" },
+    itens: [{ medicamento_id: med.body.id, valor_unitario: 2, lotes: [{ codigo: "R1", validade: hojeISO(200), quantidade: 10 }] }],
+  };
+  const primeira = await request(app).post("/api/nfe/importar").set(como(atendente)).send(corpo);
+  assert.equal(primeira.status, 201);
+  assert.equal(primeira.body.lotes_criados, 0);
+  const segunda = await request(app).post("/api/nfe/importar").set(como(atendente)).send(corpo);
+  assert.equal(segunda.status, 409);
+  const analise = await request(app).get(`/api/medicamentos/${med.body.id}`).set(como(admin));
+  assert.equal(analise.body.saldo_total, 15);
+});
+
+test("atendente não muda validade, tarja nem controle especial, nem faz inventário", async () => {
+  const med = await request(app).post("/api/medicamentos").set(como(admin))
+    .send({ nome: "Amoxicilina teste 500 mg", tarja: "vermelha_retencao", controle_especial: "antimicrobiano" });
+  const lote = await request(app).post(`/api/medicamentos/${med.body.id}/lotes`).set(como(admin))
+    .send({ codigo: "V1", validade: hojeISO(-5), quantidade_inicial: 4 });
+
+  const semControle = { nome: med.body.nome, tarja: "vermelha", controle_especial: null };
+  assert.equal((await request(app).put(`/api/medicamentos/${med.body.id}`).set(como(atendente)).send(semControle)).status, 403);
+  const soNome = { nome: "Amoxicilina 500 mg", tarja: "vermelha_retencao", controle_especial: "antimicrobiano" };
+  assert.equal((await request(app).put(`/api/medicamentos/${med.body.id}`).set(como(atendente)).send(soNome)).status, 200);
+
+  const novaValidade = { codigo: "V1", validade: hojeISO(300) };
+  assert.equal((await request(app).put(`/api/lotes/${lote.body.id}`).set(como(atendente)).send(novaValidade)).status, 403);
+  assert.equal((await request(app).put(`/api/lotes/${lote.body.id}`).set(como(atendente)).send({ codigo: "V1-A", validade: hojeISO(-5) })).status, 200);
+  assert.equal((await request(app).put(`/api/lotes/${lote.body.id}`).set(como(admin)).send(novaValidade)).status, 200);
+
+  assert.equal((await request(app).post(`/api/lotes/${lote.body.id}/inventario`).set(como(atendente)).send({ contagem: 0 })).status, 403);
+});
+
 test("NF-e: arquivo que não é nota fiscal é recusado", async () => {
   const res = await request(app).post("/api/nfe/analisar").set(como(admin)).send({ xml: "<pedido><item/></pedido>" });
   assert.equal(res.status, 400);
@@ -153,16 +190,18 @@ test("configuração de cor aceita apenas hexadecimal", async () => {
 
 test("gráficos do painel trazem 30 dias de vendas", async () => {
   const res = await request(app).get("/api/painel/graficos").set(como(admin));
-  assert.equal(res.body.vendas_diarias.length, 30);
+  assert.equal(res.body.vendas_diarias.length, 31);
   assert.ok(res.body.estoque_por_categoria.length <= 6);
   assert.ok(res.body.mais_vendidos.length > 0);
 });
 
-test("migração recria um banco antigo sem perder a possibilidade de rodar de novo", async () => {
+test("migração não apaga banco antigo sem controle de versão", async () => {
   await resetar();
   await pool.query("CREATE TABLE usuarios (id SERIAL PRIMARY KEY)");
-  const primeira = await migrar();
-  assert.deepEqual(primeira, ["001_inicial.sql"]);
+  await assert.rejects(migrar(), /sem controle de migração/);
+  assert.ok((await pool.query("SELECT to_regclass('usuarios') AS t")).rows[0].t);
+  await resetar();
+  assert.deepEqual(await migrar(), ["001_inicial.sql", "002_notas_importadas.sql"]);
   assert.deepEqual(await migrar(), []);
   await seedDatabase();
 });

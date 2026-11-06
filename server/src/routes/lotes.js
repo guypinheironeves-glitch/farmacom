@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { hojeISO, query, transaction } from "../db.js";
 import { HttpError, parseId, wrap } from "../http-error.js";
+import { somenteAdministrador } from "../auth.js";
 
 export const lotesRouter = Router();
 
@@ -41,6 +42,13 @@ lotesRouter.put(
   wrap(async (req, res) => {
     const id = parseId(req.params.id);
     const d = edicaoSchema.parse(req.body);
+    if (req.usuario.perfil !== "administrador") {
+      const atual = await query("SELECT validade FROM lotes WHERE id = $1", [id]);
+      if (!atual.rows[0]) throw new HttpError(404, "Lote não encontrado.");
+      if (atual.rows[0].validade !== d.validade) {
+        throw new HttpError(403, "Só o administrador corrige a validade de um lote.");
+      }
+    }
     const { rows } = await query(
       `UPDATE lotes SET codigo = $1, validade = $2, fornecedor_id = $3, preco_custo = $4
         WHERE id = $5 RETURNING *`,
@@ -53,6 +61,7 @@ lotesRouter.put(
 
 lotesRouter.post(
   "/:id/inventario",
+  somenteAdministrador,
   wrap(async (req, res) => {
     const id = parseId(req.params.id);
     const d = inventarioSchema.parse(req.body);
