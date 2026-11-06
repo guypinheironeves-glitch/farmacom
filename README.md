@@ -51,7 +51,7 @@ As restrições valem na API, não só na interface.
 | Parte | Stack |
 |---|---|
 | Interface | React 18, Vite, React Router. Gráficos em SVG próprios; jsPDF carregado só ao exportar |
-| API | Node.js 20, Express, Zod para validação, SQL direto com `pg` |
+| API | Node.js 22, Express, Zod para validação, SQL direto com `pg` |
 | Banco | PostgreSQL 16. O saldo de cada lote é calculado pela view `saldo_lotes` a partir das movimentações, nunca gravado |
 | Testes | `node:test` + Supertest contra um Postgres real |
 | Publicação | Render (API e interface) e Neon (banco), com CI no GitHub Actions |
@@ -70,7 +70,7 @@ docs/             pesquisa, sprints e capturas de tela
 
 ## Como rodar
 
-Precisa de Node.js 20 ou superior e de um PostgreSQL. O `docker-compose.yml` sobe o banco de desenvolvimento e o de testes:
+Precisa de Node.js 22 ou superior e de um PostgreSQL. O `docker-compose.yml` sobe o banco de desenvolvimento e o de testes:
 
 ```bash
 docker compose up -d
