@@ -6,7 +6,8 @@ import { z } from "zod";
 import { query } from "./db.js";
 import { HttpError, wrap } from "./http-error.js";
 
-const SECRET = process.env.JWT_SECRET || "troque-este-segredo-em-producao";
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) throw new Error("Defina JWT_SECRET no .env antes de iniciar a API.");
 const EXPIRA_EM = "8h";
 
 export const authRouter = Router();

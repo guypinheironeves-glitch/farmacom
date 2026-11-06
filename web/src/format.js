@@ -12,11 +12,10 @@ export const moeda = (v) =>
 
 export const numero = (v) => (Number(v) || 0).toLocaleString("pt-BR");
 
-export const hojeISO = (deslocamento = 0) => {
-  const d = new Date();
-  d.setDate(d.getDate() + deslocamento);
-  return d.toLocaleDateString("sv-SE");
-};
+// Mesmo fuso da API, para "vencido" e "hoje" baterem mesmo se o computador estiver com outro horário
+const FUSO = "America/Sao_Paulo";
+export const hojeISO = (deslocamento = 0) =>
+  new Date(Date.now() + deslocamento * 86400000).toLocaleDateString("sv-SE", { timeZone: FUSO });
 
 export const TIPOS_MOV = {
   entrada: { rotulo: "Entrada", sinal: "+", classe: "entrada" },
@@ -27,28 +26,11 @@ export const TIPOS_MOV = {
   ajuste_saida: { rotulo: "Ajuste (falta)", sinal: "-", classe: "ajuste", automatico: true },
 };
 
-export function periodoDoDia(hora = new Date().getHours()) {
-  if (hora < 5) return { id: "madrugada", saudacao: "Boa madrugada", icone: "estrela" };
-  if (hora < 12) return { id: "manha", saudacao: "Bom dia", icone: "amanhecer" };
-  if (hora < 18) return { id: "tarde", saudacao: "Boa tarde", icone: "sol" };
-  return { id: "noite", saudacao: "Boa noite", icone: "lua" };
-}
-
-const FUSOS_BRASIL = {
-  "-2": "Horário de Fernando de Noronha",
-  "-3": "Horário de Brasília",
-  "-4": "Horário do Amazonas",
-  "-5": "Horário do Acre",
-};
-
-export function regiaoDoFuso(data = new Date()) {
-  const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  const horas = -data.getTimezoneOffset() / 60;
-  const utc = `UTC${horas >= 0 ? "+" : "−"}${Math.abs(horas)}`;
-  const noBrasil = /^America\/(Sao_Paulo|Fortaleza|Recife|Bahia|Belem|Maceio|Araguaina|Santarem|Manaus|Cuiaba|Campo_Grande|Porto_Velho|Boa_Vista|Rio_Branco|Eirunepe|Noronha)$/.test(fuso) || fuso === "Brazil/East";
-  if (noBrasil && FUSOS_BRASIL[horas]) return `${FUSOS_BRASIL[horas]} (${utc})`;
-  const cidade = fuso.split("/").pop()?.replace(/_/g, " ");
-  return cidade ? `${cidade} (${utc})` : utc;
+export function saudacao(hora = new Date().getHours()) {
+  if (hora < 5) return "Boa noite";
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 export const dataLocal = (iso) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "-");

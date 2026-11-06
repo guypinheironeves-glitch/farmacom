@@ -1,40 +1,82 @@
 # FarmaCom
 
-Sistema web de controle de estoque e validade para farmácias de bairro, desenvolvido no Desafio Unifacisa (Análise e Desenvolvimento de Sistemas).
+Controle de estoque e validade para farmácias de bairro. Mostra o que vence e o que está acabando, obriga a receita na venda de controlados e antimicrobianos e gera os relatórios que a farmácia precisa (perdas, curva ABC, livro de controlados e o arquivo do SNGPC).
 
-![Painel](docs/telas/painel.png)
+Projeto do Desafio Unifacisa, curso de Análise e Desenvolvimento de Sistemas.
 
-## O que o sistema faz
+![Painel do FarmaCom](docs/telas/painel.png)
 
-- Cadastro de medicamentos com tarja, tipo (referência, genérico ou similar), controle especial, código de barras, registro na Anvisa e preço
-- Cadastro de fornecedores; cada lote fica ligado a quem entregou
-- Entrada de lotes pelo XML da nota fiscal de compra (NF-e), com lote, validade e quantidade lidos da nota
-- Lotes com validade e custo; a venda sai sempre do lote que vence primeiro
-- Receita obrigatória na venda de controlados e antimicrobianos
-- Estorno de movimentações e contagem de inventário com ajuste automático
-- Painel com gráficos de vendas, estoque por categoria, vencimentos e mais vendidos
-- Relatórios de perdas, movimentação, curva ABC e livro de controlados, em planilha ou PDF
-- Geração do arquivo XML para o SNGPC da Anvisa, com conferência de pendências
-- Aviso diário por e-mail ou WhatsApp com o que vence e o que está acabando (opcional)
-- Perfis de administrador e atendente, tema claro e escuro e cor de destaque configurável
+## Funcionalidades
 
-A pesquisa que orientou essas funcionalidades está em [docs/pesquisa.md](docs/pesquisa.md).
+**Estoque por lote**
+- Cada medicamento tem lotes com validade, custo, fornecedor e saldo próprio
+- A venda sai do lote válido que vence primeiro (FEFO); lote vencido não pode ser vendido, só baixado
+- Contagem de inventário com ajuste automático e estorno de movimentações
+- Entrada pelo XML da NF-e de compra: lê lotes, validades e quantidades e reconhece os itens pelo código de barras ou registro na Anvisa. A mesma nota não entra duas vezes
 
-![Medicamento](docs/telas/medicamento.png)
+**Regras de dispensação**
+- Tarja, tipo (referência, genérico, similar) e lista da Portaria 344/98 em cada medicamento
+- Venda de controlado ou antimicrobiano exige data da receita, prescritor, registro profissional e paciente; listas A, B e C2 exigem também o número da notificação
+- Receita de antimicrobiano vale 10 dias a partir da emissão
+
+**Painel e relatórios**
+- Vencidos, vencendo, abaixo do mínimo e sugestão de compra (30 dias de vendas + mínimo − saldo válido)
+- Gráficos de vendas, estoque por categoria, vencimentos por mês e mais vendidos
+- Perdas, movimentação, curva ABC e livro de controlados, em planilha ou PDF
+- Arquivo XML para o SNGPC, com conferência de pendências antes de gerar
+
+**Operação**
+- Aviso diário por e-mail ou WhatsApp com vencimentos e estoque baixo (opcional)
+- Perfis de administrador e atendente
+- Tema claro e escuro, com a cor de destaque da farmácia
+
+A pesquisa de mercado e de regulação que orientou essas regras está em [docs/pesquisa.md](docs/pesquisa.md).
+
+![Tela de um medicamento](docs/telas/medicamento.png)
+
+## Perfis
+
+| Ação | Atendente | Administrador |
+|---|:---:|:---:|
+| Registrar vendas, entradas, baixas e notas fiscais | ✓ | ✓ |
+| Cadastrar medicamentos e lotes | ✓ | ✓ |
+| Alterar tarja, controle especial ou validade de lote | | ✓ |
+| Inventário, estorno e exclusões | | ✓ |
+| Usuários e configurações | | ✓ |
+
+As restrições valem na API, não só na interface.
 
 ## Tecnologias
 
-React com Vite na interface, Node.js com Express na API e PostgreSQL no banco.
+| Parte | Stack |
+|---|---|
+| Interface | React 18, Vite, React Router. Gráficos em SVG próprios; jsPDF carregado só ao exportar |
+| API | Node.js 22, Express, Zod para validação, SQL direto com `pg` |
+| Banco | PostgreSQL 16. O saldo de cada lote é calculado pela view `saldo_lotes` a partir das movimentações, nunca gravado |
+| Testes | `node:test` + Supertest contra um Postgres real |
+| Publicação | Render (API e interface) e Neon (banco), com CI no GitHub Actions |
+
+```
+server/
+  db/migracoes/   SQL versionado, aplicado em ordem pelo db/banco.js
+  src/routes/     uma rota por recurso (medicamentos, lotes, movimentações, nfe...)
+  src/            regras compartilhadas: auth, NF-e, SNGPC, avisos, validação
+  test/
+web/
+  src/pages/      uma tela por rota
+  src/components/ formulários, gráficos e componentes de interface
+docs/             pesquisa, sprints e capturas de tela
+```
 
 ## Como rodar
 
-Precisa de Node.js 20 ou superior e de um PostgreSQL. Com Docker, na raiz do projeto:
+Precisa de Node.js 22 ou superior e de um PostgreSQL. O `docker-compose.yml` sobe o banco de desenvolvimento e o de testes:
 
 ```bash
 docker compose up -d
 ```
 
-API:
+API (porta 3333):
 
 ```bash
 cd server
@@ -44,7 +86,7 @@ npm run db:seed
 npm run dev
 ```
 
-Interface, em outro terminal:
+Interface (porta 5173), em outro terminal:
 
 ```bash
 cd web
@@ -52,11 +94,36 @@ npm install
 npm run dev
 ```
 
-Abra http://localhost:5173 e entre com `demo@farmacom.app` (administrador) ou `atendente@farmacom.app` (atendente), senha `farmacom123`. Os dados de exemplo são de uma farmácia fictícia. Para testar a entrada por nota, use o arquivo `web/public/nfe-exemplo.xml`.
+Abra http://localhost:5173 e entre com uma das contas de demonstração, senha `farmacom123`:
+
+- `demo@farmacom.app` (administrador)
+- `atendente@farmacom.app` (atendente)
+
+Os dados são de uma farmácia fictícia. Para testar a entrada por nota, use `web/public/nfe-exemplo.xml`.
+
+### Variáveis de ambiente
+
+Estão comentadas em `server/.env.example`. As principais:
+
+| Variável | Para quê |
+|---|---|
+| `DATABASE_URL` | Banco da API |
+| `JWT_SECRET` | Obrigatória. A API não sobe sem ela |
+| `CORS_ORIGIN` | Endereço da interface em produção. Vazio libera qualquer origem |
+| `APP_TIMEZONE` | Fuso de "hoje" e "vencido" (padrão `America/Sao_Paulo`) |
+
+## Testes
+
+```bash
+cd server
+npm test
+```
+
+Os testes recriam o banco `farmacom_test` e cobrem as regras de venda, receita, FEFO, permissões, NF-e, SNGPC, curva ABC e migrações. Rodam a cada push no GitHub Actions, junto com o build da interface.
 
 ## Avisos diários
 
-Os avisos são ligados em Configurações. Os canais dependem de variáveis de ambiente na API (veja `server/.env.example`):
+Ligados em Configurações. Os canais dependem de variáveis na API:
 
 - E-mail: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e `SMTP_FROM`
 - WhatsApp: `WHATSAPP_API_URL`, `WHATSAPP_INSTANCIA` e `WHATSAPP_TOKEN` (Evolution API)
@@ -67,16 +134,9 @@ A API confere o horário a cada minuto. No plano gratuito do Render ela hiberna,
 
 O arquivo gerado em Relatórios segue a estrutura de entradas, saídas e perdas do SNGPC, mas precisa ser validado no ambiente de testes da Anvisa antes de qualquer transmissão real.
 
-## Testes
-
-```bash
-cd server
-npm test
-```
-
 ## Publicação
 
-A API e a interface estão no Render (configuração em `render.yaml`) e o banco no Neon. A cada envio para a `main`, o Render publica a nova versão e aplica as migrações do banco. Os dados de demonstração só são criados quando o banco está vazio.
+A configuração está em `render.yaml`. A cada push na `main`, o Render publica a nova versão e aplica as migrações pendentes. Os dados de demonstração só são criados quando o banco está vazio.
 
 ## Equipe
 

@@ -1,22 +1,15 @@
 import { fileURLToPath } from "node:url";
 import { hojeISO, pool } from "../src/db.js";
 import { hashSenha } from "../src/auth.js";
+import { completarCnpj, completarEan } from "../src/validacao.js";
 import { migrar, resetar } from "./banco.js";
 import { CATALOGO_DEMO, FORNECEDORES, PACIENTES, PRESCRITORES } from "./catalogo-demo.js";
 
-export const USUARIO_DEMO = { nome: "Proprietário Demo", email: "demo@farmacom.app", senha: "farmacom123" };
-export const ATENDENTE_DEMO = { nome: "Atendente Demo", email: "atendente@farmacom.app", senha: "farmacom123" };
+export const USUARIO_DEMO = { nome: "Marta Albuquerque", email: "demo@farmacom.app", senha: "farmacom123" };
+export const ATENDENTE_DEMO = { nome: "Rafael Souza", email: "atendente@farmacom.app", senha: "farmacom123" };
 
-function cnpjFicticio(filial) {
-  const base = `11222333${String(filial).padStart(4, "0")}`;
-  const dv = (numeros, pesos) => {
-    const resto = numeros.split("").reduce((acc, d, i) => acc + Number(d) * pesos[i], 0) % 11;
-    return resto < 2 ? 0 : 11 - resto;
-  };
-  const p1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const d1 = dv(base, p1);
-  return `${base}${d1}${dv(base + d1, [6, ...p1])}`;
-}
+// Raiz 11.222.333 é fictícia; cada fornecedor é uma filial
+const cnpjFicticio = (filial) => completarCnpj(`11222333${String(filial).padStart(4, "0")}`);
 
 function chaveNfe(cnpj, numero, diasAtras) {
   const d = new Date(Date.now() - diasAtras * 86400000);
@@ -32,11 +25,8 @@ function gerador(semente) {
   };
 }
 
-function ean(sequencia) {
-  const base = `200${String(sequencia).padStart(9, "0")}`;
-  const soma = base.split("").reduce((acc, d, i) => acc + Number(d) * (i % 2 ? 3 : 1), 0);
-  return base + ((10 - (soma % 10)) % 10);
-}
+// Prefixo 200 é de uso interno no GS1: não colide com produto real
+const ean = (sequencia) => completarEan(`200${String(sequencia).padStart(9, "0")}`);
 
 function siglaLote(nome, n) {
   const letras = nome.normalize("NFD").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 2);
@@ -81,7 +71,7 @@ function planejar(item, indice) {
   const vendas = [];
   while (restante > 0) {
     const qtd = Math.min(restante, 1 + Math.floor(rnd() * (vendasMes > 40 ? 4 : 2)));
-    vendas.push({ qtd, diasAtras: 1 + Math.floor(rnd() * 27) });
+    vendas.push({ qtd, diasAtras: 1 + Math.floor(rnd() * 30) });
     restante -= qtd;
   }
   vendas.sort((a, b) => b.diasAtras - a.diasAtras);
@@ -129,11 +119,10 @@ export async function seedDatabase({ recriar = true } = {}) {
   try {
     await client.query("BEGIN");
     const u = await client.query(
-      "INSERT INTO usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id",
+      "INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES ($1, $2, $3, 'administrador') RETURNING id",
       [USUARIO_DEMO.nome, USUARIO_DEMO.email, await hashSenha(USUARIO_DEMO.senha)]
     );
     const usuarioId = u.rows[0].id;
-    await client.query("UPDATE usuarios SET perfil = 'administrador' WHERE id = $1", [usuarioId]);
     await client.query(
       "INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES ($1, $2, $3, 'atendente')",
       [ATENDENTE_DEMO.nome, ATENDENTE_DEMO.email, await hashSenha(ATENDENTE_DEMO.senha)]

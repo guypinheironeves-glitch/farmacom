@@ -349,7 +349,7 @@ function Usuarios() {
         <button className="botao botao-primario" onClick={() => setEditado({})}><Icone nome="mais" tamanho={18} /> Novo usuário</button>
       </div>
       <p className="subtitulo" style={{ marginTop: 0, marginBottom: 14 }}>
-        Atendentes registram vendas e entradas. Só administradores excluem medicamentos, estornam movimentações e mudam configurações.
+        Atendentes registram vendas, entradas e baixas. Só administradores alteram tarja, controle especial e validade, fazem inventário, estornam movimentações, excluem cadastros e mudam configurações.
       </p>
       <Aviso>{erro}</Aviso>
       {!lista && !erro && <Carregando />}

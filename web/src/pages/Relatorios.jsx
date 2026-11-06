@@ -106,7 +106,7 @@ function Exportar({ nome, titulo, periodo, colunas, linhas, resumo, totais, obse
 
 function Destaques({ itens }) {
   return (
-    <div className="destaques escalonado">
+    <div className="destaques">
       {itens.map((i) => (
         <div key={i.rotulo} className={`destaque ${i.tom ? `destaque-${i.tom}` : ""}`}>
           <strong>{i.valor}</strong>
@@ -227,7 +227,7 @@ function CurvaABC({ r, periodo }) {
   const maior = Math.max(...r.itens.map((x) => Number(x.faturamento)), 1);
   return (
     <>
-      <div className="abc-resumo escalonado">
+      <div className="abc-resumo">
         {r.resumo.map((c) => (
           <div key={c.classe} className={`abc-classe abc-${c.classe}`}>
             <div className="abc-letra">{c.classe}</div>

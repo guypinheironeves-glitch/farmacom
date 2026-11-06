@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../App.jsx";
 import { api, mensagemDeErro } from "../api.js";
 import { ROTULO_TIPO, useCatalogo } from "../catalogo.js";
 import { Aviso, Campo, Modal } from "./ui.jsx";
@@ -10,6 +11,9 @@ const VAZIO = {
 
 export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
   const catalogo = useCatalogo();
+  const { admin } = useAuth();
+  // Tarja e controle definem se a venda exige receita; numa edição, só o administrador muda
+  const travarRegulacao = Boolean(inicial) && !admin;
   const [dados, setDados] = useState(() => {
     if (!inicial) return VAZIO;
     const d = { ...VAZIO };
@@ -87,6 +91,7 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
 
         <fieldset>
           <legend>Regulação</legend>
+          {travarRegulacao && <p className="nota" style={{ marginTop: 0 }}>Tarja e controle especial só podem ser alterados pelo administrador.</p>}
           <div className="form-grade">
             <Campo rotulo="Tipo">
               <select value={dados.tipo} onChange={muda("tipo")}>
@@ -94,13 +99,13 @@ export default function FormMedicamento({ inicial, aoFechar, aoSalvar }) {
               </select>
             </Campo>
             <Campo rotulo="Controle especial" dica="Controlados e antimicrobianos exigem os dados da receita na venda.">
-              <select value={dados.controle_especial || ""} onChange={muda("controle_especial")}>
+              <select value={dados.controle_especial || ""} onChange={muda("controle_especial")} disabled={travarRegulacao}>
                 <option value="">Nenhum</option>
                 {catalogo && Object.entries(catalogo.controles).map(([v, c]) => <option key={v} value={v}>{c.rotulo}</option>)}
               </select>
             </Campo>
             <Campo rotulo="Tarja" largura={2}>
-              <select value={dados.tarja} onChange={muda("tarja")}>
+              <select value={dados.tarja} onChange={muda("tarja")} disabled={travarRegulacao}>
                 {catalogo && Object.entries(catalogo.tarjas).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
               </select>
             </Campo>

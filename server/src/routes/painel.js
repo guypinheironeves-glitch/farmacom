@@ -10,7 +10,7 @@ painelRouter.get(
     const hoje = hojeISO();
     const vendas = await query(
       `WITH dias AS (
-         SELECT generate_series($1::DATE - 29, $1::DATE, INTERVAL '1 day')::DATE AS dia
+         SELECT generate_series($1::DATE - 30, $1::DATE, INTERVAL '1 day')::DATE AS dia
        )
        SELECT d.dia, COALESCE(SUM(mv.quantidade), 0)::INTEGER AS unidades,
               COALESCE(ROUND(SUM(mv.quantidade * COALESCE(m.preco_venda, 0)), 2), 0) AS faturamento

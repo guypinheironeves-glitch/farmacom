@@ -19,7 +19,7 @@ Sistemas como Trier, Vetor Farma, Inovafarma e Automatiza trazem, entre outras, 
 | Leitura de código de barras | Campo EAN-13 com validação do dígito verificador e busca por código |
 | Controle de medicamentos termolábeis | Marcação de medicamento refrigerado (2 °C a 8 °C) |
 
-Ficaram para as próximas Sprints: entrada automática pela nota fiscal (XML da NF-e), integração com o PDV e emissão de NFC-e, tabelas de preço (PMC, PBM), inventário e envio real do arquivo ao SNGPC.
+Depois desse levantamento entraram a leitura do XML da NF-e, o inventário e a geração do arquivo do SNGPC. Ficaram para depois: integração com o PDV e emissão de NFC-e, tabelas de preço (PMC, PBM) e o envio real do arquivo ao SNGPC.
 
 ## 2. Regras brasileiras aplicadas
 
